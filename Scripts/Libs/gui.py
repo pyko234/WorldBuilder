@@ -6,7 +6,6 @@ from pathlib import Path
 from sqlalchemy import create_engine, inspect, MetaData
 from sqlalchemy.orm import sessionmaker
 from Scripts.Libs.database_schema import WorldBuilder
-from Scripts.Libs.create_database import create_database
 from PIL import Image, ImageTk
 import Scripts.Libs.backend_logic as backend_logic
 
@@ -99,7 +98,7 @@ class WorldSelectionFrame(tk.Frame):
         return names
     
     def create_new(self):
-        database_url = create_database()
+        database_url = backend_logic.create_database()
         
         if database_url:
             self.app_data.session = backend_logic.create_session_by_url(database_url)
@@ -251,6 +250,7 @@ class WorldOverviewFrame(tk.Frame):
         # Display photo in map window 
         label = tk.Label(map_window, image=self.map_photo)
         label.pack()
+
 
 class NewEntrySelectCategoryFrame(tk.Frame):
     def __init__(self, parent, controller, app_data):
@@ -543,14 +543,6 @@ class WorldBuilderApp(tk.Tk):
         self.frames = {frame_class: None for frame_class in frame_classes}
         self.current_frame = None  # Track the current frame
 
-        if not self.check_for_databases():
-            messagebox.showinfo("OK Message", "No world found, please create one.")
-            name, database_url = create_database()
-            session = backend_logic.create_session_by_url(database_url)
-            self.app_data.selected_world, self.app_data.url, self.app_data.session = [name, database_url, session]
-            self.show_frame(WorldOverviewFrame)
-            return
-
         self.show_frame(WorldSelectionFrame)
 
         # Bind the closing event to the on_closing method
@@ -597,17 +589,8 @@ class WorldBuilderApp(tk.Tk):
         if isinstance(frame, EditEntryFrame):
             self.geometry("900x800")
 
-    def check_for_databases(self):
-        script_directory = Path(os.path.dirname(os.path.abspath(__file__)))
-        path = script_directory.parent.parent / "Lib" / "db" 
-
-        for file in os.listdir(path):
-            if file.endswith("_database.db"):
-                return True
-        
-        return False
-
 
 if __name__ == "__main__":
+    backend_logic.find_database()
     app = WorldBuilderApp()
     app.mainloop()

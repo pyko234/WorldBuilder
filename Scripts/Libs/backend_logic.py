@@ -1,11 +1,57 @@
 from sqlalchemy import create_engine, inspect, text, event
 from sqlalchemy.orm import sessionmaker
 from pathlib import Path
-import os
 from Scripts.Libs.database_schema import WorldBuilder
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
+from sys import exit
 import traceback
+import os
 
+script_directory = Path(os.path.dirname(os.path.abspath(__file__)))
+
+path = script_directory.parent.parent / "Lib" / "db"
+
+def find_database():
+    found = any(file.endswith("_database.db") for file in os.listdir(path))
+    
+    if not found:
+        reponse = messagebox.askokcancel(message="No database found. Select OK to create one")
+
+        if reponse:
+            create_database()
+        
+        else:
+            print("User selected not to create a database.")
+            exit()
+
+def create_database():
+    # Ask for world name
+    name = simpledialog.askstring("World Name", "Please Enter a world name:")
+
+    # Quick if for verification of name
+    if name is None:
+        print("Invalid world name. Aborting.")
+        return None  # Return None if the name is invalid
+
+    database_folder = path
+    database_folder.mkdir(parents=True, exist_ok=True)
+
+    DATABASE_URL = rf'sqlite:///{database_folder}/{name.lower().replace(" ", "_")}_database.db'
+    print(f"Database URL: {DATABASE_URL}")
+
+    world_builder = WorldBuilder(database_url=DATABASE_URL)
+
+    with world_builder.get_session() as session:
+        try:
+            world = WorldBuilder.World(name=name)
+            session.add(world)
+            session.commit()
+            print(session.query(WorldBuilder.World).first().name)
+            return DATABASE_URL  # Return just the created database url
+        except SQLAlchemyError as e:
+            print(f"Error: {e}")
+            os.remove(DATABASE_URL)
+            return None
 
 def get_database_url(database_identifier):
     if "://" in database_identifier:
@@ -280,4 +326,5 @@ def veiw_world_map(session, database_url):
 
 
 if __name__ == '__main__':
+    find_database()
     pass
