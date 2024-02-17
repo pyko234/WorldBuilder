@@ -118,6 +118,28 @@ def add_data_to_table(session, table_name, data_dict, database_url):
         # Rollback the transaction in case of an error
         session.rollback()
 
+def remove_entry(session, table_name, entry_name, database_url):
+    try:
+        world_builder = WorldBuilder(database_url)
+        main_table_class = world_builder.get_table_class(table_name)
+
+        # Query the entry to be deleted
+        entry_to_delete = session.query(main_table_class).filter_by(name=entry_name).first()
+
+        if entry_to_delete:
+            # Delete the entry
+            session.delete(entry_to_delete)
+            session.commit()
+            print(f"Entry '{entry_name}' removed successfully!")
+        else:
+            print(f"Entry '{entry_name}' not found.")
+    except Exception as e:
+        # Print the traceback and error message
+        traceback.print_exc()
+        print(f"Error removing entry '{entry_name}' from {table_name}: {e}")
+        # Rollback the transaction in case of an error
+        session.rollback()
+
 def get_entry_names(session, table_name, database_url):
     try:
         # Get the table class dynamically using the session
@@ -206,4 +228,56 @@ def get_tag_location(session, entry_name, database_url):
     except Exception as e:
         print(f"Error retrieving tags: {e}")
         return []
+
+def add_world_map(session, image_data, database_url):
+    try:
+        #create instance of WorldBuilder
+        world = WorldBuilder(database_url)
+
+        #Get column_class
+        main_column_class = world.get_table_class('world')
+
+        #Get Entry
+        entry = session.query(main_column_class).first()
+
+        #Update Entry
+        entry.world_map = image_data
+
+        #Commit changes
+        session.commit()
+
+    except Exception as e:
+        # Print the traceback and error message
+        traceback.print_exc()
+
+        print(f"Erorr adding world map: {e}")
+
+        # Rollback the transaction in case of error
+        session.rollback()
+
+def veiw_world_map(session, database_url):
+    try:
+        # Create instance of world
+        world = WorldBuilder(database_url)
+
+        # Get column class
+        main_table_class = world.get_table_class('world')
+
+        # Get Entry
+        entry = session.query(main_table_class).first()
+
+        # Get Data
+        data = entry.world_map
+
+        return data
     
+    except Exception as e:
+        # Print traceback and error message
+        traceback.print_exc()
+
+        print(f"Error viewing world map: {e}")
+
+
+
+if __name__ == '__main__':
+    pass

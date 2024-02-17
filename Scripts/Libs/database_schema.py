@@ -36,6 +36,7 @@ class WorldBuilder:
     class World(Base):
         __tablename__ = 'world'
         name = Column(Text, primary_key=True)
+        world_map = Column(BLOB, nullable=True)
 
     class Planes_of_Exsitence(Base):
         __tablename__ = 'planes'

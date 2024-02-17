@@ -109,6 +109,7 @@ class WorldSelectionFrame(tk.Frame):
 class WorldOverviewFrame(tk.Frame):
     def __init__(self, parent, controller, app_data):
         tk.Frame.__init__(self, parent)
+        self.parent = parent
         self.controller = controller
         self.app_data = app_data
 
@@ -117,6 +118,12 @@ class WorldOverviewFrame(tk.Frame):
         self.label_text_var.set(self.app_data.selected_world)
         label = tk.Label(self, text=self.label_text_var.get())
         label.pack(pady=10)
+
+        select_map_button = tk.Button(self, text='Select Map', command=self.select_map)
+        select_map_button.pack(pady=10)
+
+        view_map_button = tk.Button(self, text='View World Map', command=self.view_map)
+        view_map_button.pack(pady=10)
 
         selection_label = tk.Label(self, text="Entries:")
         selection_label.pack(pady=10)
@@ -166,7 +173,7 @@ class WorldOverviewFrame(tk.Frame):
                 individual_frame = tk.Frame(category_frame)
                 individual_frame.pack(side=tk.LEFT)
 
-                label = tk.Label(individual_frame, text=table_names[x])
+                label = tk.Label(individual_frame, text=table_names[x].replace('_', ' ').title())
                 label.pack(side=tk.TOP)
 
                 listbox = tk.Listbox(individual_frame, height=10)
@@ -214,6 +221,36 @@ class WorldOverviewFrame(tk.Frame):
 
         self.controller.show_frame(EditEntryFrame)
 
+    def select_map(self):
+        # Open a file dialog to select an image file
+        file_path = filedialog.askopenfilename()
+        if file_path:
+            # Read the image file and convert it to bytes
+            with open(file_path, 'rb') as file:
+               image_data = file.read()
+            # Display the selected image
+            self.save_image(image_data)
+    
+    def save_image(self, image_data):
+        backend_logic.add_world_map(self.app_data.session, image_data, self.app_data.url)
+
+    def view_map(self):
+        # Get map data from database
+        map_data = backend_logic.veiw_world_map(self.app_data.session, self.app_data.url)
+        
+        # Convert data to image
+        image = Image.open(io.BytesIO(map_data))
+
+        # Create new window titled World Map
+        map_window = tk.Toplevel(self.parent)
+        map_window.title("World Map")
+
+        # Reference image as tk.PhotoImage and save as class object to aviod garbage collection
+        self.map_photo = ImageTk.PhotoImage(image)
+        
+        # Display photo in map window 
+        label = tk.Label(map_window, image=self.map_photo)
+        label.pack()
 
 class NewEntrySelectCategoryFrame(tk.Frame):
     def __init__(self, parent, controller, app_data):
@@ -228,7 +265,7 @@ class NewEntrySelectCategoryFrame(tk.Frame):
         self.listbox.pack()
 
         for item in self.app_data.table_names:
-            self.listbox.insert(tk.END, item)
+            self.listbox.insert(tk.END, item.replace('_', ' ').title())
 
         select_button = tk.Button(self, text='Select', command=self.select_category)
         select_button.pack(side=tk.RIGHT, padx=20)
@@ -241,7 +278,7 @@ class NewEntrySelectCategoryFrame(tk.Frame):
 
          if selected_indices:
              selected_item = self.listbox.get(selected_indices[0])
-             self.app_data.selected_category = selected_item
+             self.app_data.selected_category = selected_item.replace(' ', '_').lower()
              self.controller.show_frame(EditEntryFrame)
 
 
@@ -252,6 +289,7 @@ class EditEntryFrame(tk.Frame):
         self.controller = controller
         self.app_data = app_data
         self.text_widgets = {}
+        self.image_data = None
 
         if not self.app_data.selected_world:
             return
@@ -335,6 +373,9 @@ class EditEntryFrame(tk.Frame):
         # Bind the <Return> key to the add_tag function
         self.tag_combobox.bind('<Return>', self.add_tag)
 
+        delete_entry_button = tk.Button(self.inner_frame, text="Delete Entry", command=self.delete_entry)
+        delete_entry_button.pack(pady=5)
+
         button_frame = tk.Frame(self)
         button_frame.pack(side='bottom', pady=10)
 
@@ -364,10 +405,18 @@ class EditEntryFrame(tk.Frame):
         # Convert the list of tags to a comma-separated string
         data_to_write['tags'] = ', '.join(selected_tags)
 
-        # Include the image data in the data_to_write dictionary
-        data_to_write['image_data'] = self.image_data
+        if self.image_data:
+            # Include the image data in the data_to_write dictionary
+            data_to_write['image_data'] = self.image_data
 
         backend_logic.add_data_to_table(self.app_data.session, self.app_data.selected_category, data_to_write, self.app_data.url)
+        self.controller.show_frame(WorldOverviewFrame)
+
+    def delete_entry(self):
+        data_to_remove = self.name_text.get()
+
+        backend_logic.remove_entry(self.app_data.session, self.app_data.selected_category, data_to_remove, self.app_data.url)
+
         self.controller.show_frame(WorldOverviewFrame)
 
     def insert_data_if_exists(self):
