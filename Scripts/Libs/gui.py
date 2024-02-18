@@ -19,6 +19,7 @@ class AppData:
         self.previous_frame = None
         self.session = None
         self.url = None
+        self.edit = None
 
 
 class WorldSelectionFrame(tk.Frame):
@@ -66,6 +67,9 @@ class WorldSelectionFrame(tk.Frame):
     def proceed(self):
         selected_world = self.world_var.get()
         edit_mode = self.edit_var.get()
+        
+        if edit_mode == "Edit":
+            self.app_data.edit = True
 
         # Get the URL from the dictionary using the selected_world
         database_url = self.worlds[selected_world]
@@ -218,7 +222,11 @@ class WorldOverviewFrame(tk.Frame):
         self.app_data.selected_entry_data = data
         self.app_data.selected_category = table_name
 
-        self.controller.show_frame(EditEntryFrame)
+        if self.app_data.edit:
+            self.controller.show_frame(EditEntryFrame)
+        
+        else:
+            self.controller.show_frame(ViewEntryFrame)
 
     def select_map(self):
         # Open a file dialog to select an image file
@@ -280,6 +288,191 @@ class NewEntrySelectCategoryFrame(tk.Frame):
              selected_item = self.listbox.get(selected_indices[0])
              self.app_data.selected_category = selected_item.replace(' ', '_').lower()
              self.controller.show_frame(EditEntryFrame)
+
+class ViewEntryFrame(tk.Frame):
+    def __init__(self, parent, controller, app_data):
+        tk.Frame.__init__(self, parent)
+        self.parent = parent
+        self.controller = controller
+        self.app_data = app_data
+        self.text_widgets = {}
+        self.image_data = None
+
+        if not self.app_data.selected_world:
+            return
+
+        self.column_names = backend_logic.get_column_names(self.app_data.session, self.app_data.selected_category)
+
+        top_label = tk.Label(self, text=f"New {self.app_data.selected_category.title()} Entry:")
+        top_label.pack(pady=5)
+
+        name_label = tk.Label(self, text="Name")
+        name_label.pack(pady=5)
+
+        self.name_text = tk.Label(self)
+        self.name_text.pack(pady=5)
+
+        canvas_frame = tk.Frame(self)
+        canvas_frame.pack(pady=5, fill='both', expand=True)
+
+        self.canvas = tk.Canvas(canvas_frame)
+        self.canvas.pack(side='left', fill='both', expand=True)
+
+        self.scrollbar = tk.Scrollbar(canvas_frame, orient='vertical', command=self.canvas.yview)
+        self.scrollbar.pack(side='right', fill='y')
+
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        self.inner_frame = tk.Frame(self.canvas)
+        self.canvas.create_window((0, 0), window=self.inner_frame, anchor='nw')
+
+        self.inner_frame_id = self.canvas.create_window(0, 0, window=self.inner_frame, anchor='nw')
+
+        self.inner_frame.bind("<Configure>", self.on_frame_configure)
+        self.canvas.bind("<Configure>", self.on_canvas_configure)
+
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
+
+        current_row = 0
+
+        for i in self.column_names[1:-1]:
+            if i == "tags":
+                continue
+
+            label = tk.Label(self.inner_frame, text=i.capitalize())
+            label.grid(row=current_row, column=0, sticky="w", padx=5, pady=5)
+
+            text_frame = tk.Frame(self.inner_frame)
+            text_frame.grid(row=current_row + 1, column=1, sticky="w", padx=5, pady=5)
+
+            text = tk.Label(text_frame)
+            text.pack()
+
+            self.text_widgets[i] = text
+
+            current_row = current_row + 2
+        
+        image_label = tk.Label(self.inner_frame, text="Photo")
+        image_label.grid(row=current_row + 2, column=0, sticky="w", padx=5, pady=5)
+
+        self.image = tk.Label(self.inner_frame)
+        self.image.grid(row=current_row + 3, column=1, sticky="w", padx=5, pady=5)
+
+        self.image.bind('<Double-1>', self.view_original_image)
+
+        tag_label = tk.Label(self.inner_frame, text='Tags')
+        tag_label.grid(row=current_row + 4, column=0, sticky="w", padx=5, pady=5)
+
+        # Listbox to display existing tags
+        self.tag_listbox = tk.Listbox(self.inner_frame, selectmode=tk.MULTIPLE)
+        self.tag_listbox.grid(row=current_row + 5, column=1, sticky="w", padx=5, pady=5)
+
+        # Bind the on_tag_double_click command
+        self.tag_listbox.bind('<Double-1>', self.on_tag_double_click)
+
+        back_button = tk.Button(self, text="Back", command=lambda: self.controller.show_frame(self.app_data.previous_frame))
+        back_button.pack(pady=10)
+
+        self.insert_data_if_exists()
+
+    def insert_data_if_exists(self):
+        if not self.app_data.selected_entry_data:
+            return
+        
+        print(self.app_data.selected_entry_data['name'])
+
+        for table, textbox in self.text_widgets.items():
+            textbox.configure(text=self.app_data.selected_entry_data[table])
+
+        self.name_text.configure(text=self.app_data.selected_entry_data['name'])
+
+        if self.app_data.selected_entry_data['image_data'] != None:
+            self.image_data = self.app_data.selected_entry_data['image_data']
+            self.display_image(self.image_data)
+
+        # Clear the Listbox
+        self.tag_listbox.delete(0, tk.END)
+
+        # Populate the Listbox with existing tags
+        existing_tags = self.app_data.selected_entry_data['tags'].split(', ')
+        for tag in existing_tags:
+            if tag == self.app_data.selected_entry_data['name']:
+                continue
+            self.tag_listbox.insert(tk.END, tag)
+
+        self.app_data.selected_entry_data = None
+
+    def on_frame_configure(self, event):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def on_canvas_configure(self, event):
+        self.canvas.itemconfig(self.inner_frame_id, width=event.width)
+
+    def on_mouse_wheel(self, event):
+        # Adjust the view of the canvas when the mouse wheel is scrolled
+        self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
+
+    def display_image(self, image_data):
+        # Open the image using PIL
+        image = Image.open(io.BytesIO(image_data))
+        # Resize the image if necessary to fit in the GUI
+        # Use Image.Resampling.LANCZOS for high-quality downsampling
+        image = image.resize((200, 200), Image.Resampling.LANCZOS)
+        # Convert the image to Tkinter PhotoImage format
+        photo = ImageTk.PhotoImage(image)
+        # Display the image in a label
+        self.image.configure(image=photo)
+        self.image.image = photo  # Keep a reference to avoid garbage collection
+
+    def view_original_image(self, event):
+        # Check if the image data exists
+        if hasattr(self, 'image_data'):
+            # Open the original image using PIL
+            original_image = Image.open(io.BytesIO(self.image_data))
+
+            # Create a new window to display the original image
+            original_window = tk.Toplevel(self.parent)
+            original_window.title("Original Image")
+
+            # Create a label to display the original image
+            original_image_label = tk.Label(original_window)
+
+            # Convert the original image to Tkinter PhotoImage format
+            original_photo = ImageTk.PhotoImage(original_image)
+
+            # Display the original image in the label
+            original_image_label.configure(image=original_photo)
+            original_image_label.image = original_photo  # Keep a reference to avoid garbage collection
+            original_image_label.pack()
+
+        else:
+            # If image data does not exist, show a message
+            messagebox.showinfo("No Image", "No image data available.")
+
+    def on_tag_double_click(self, event):
+        # Get the selected tag from the tag_listbox
+        selected_index = self.tag_listbox.curselection()
+        selected_tag = self.tag_listbox.get(self.tag_listbox.curselection())
+
+        # Retrieve information about the selected tag
+        self.app_data.selected_entry_data = backend_logic.get_data_for_entry(self.app_data.session, selected_tag, self.app_data.url)
+
+        self.app_data.selected_category = backend_logic.get_tag_location(self.app_data.session, selected_tag, self.app_data.url)
+
+        # Create a new Toplevel window
+        new_window = tk.Toplevel(self.parent)
+
+        # Create a new instance of EditEntryFrame with the info from the selected tag
+        new_frame = EditEntryFrame(new_window, self.controller, self.app_data)
+
+        # Pack the EditEntryFrame into the new window
+        new_frame.pack(expand=True, fill="both", pady=20, padx=20)
+
+        # Deselect the tag after opening the new window
+        self.tag_listbox.selection_clear(selected_index)
+
+        
 
 
 class EditEntryFrame(tk.Frame):
@@ -552,7 +745,7 @@ class WorldBuilderApp(tk.Tk):
         # Create the menu bar
         self.create_menu_bar()
 
-        frame_classes = [WorldSelectionFrame, WorldOverviewFrame, NewEntrySelectCategoryFrame, EditEntryFrame]
+        frame_classes = [WorldSelectionFrame, WorldOverviewFrame, NewEntrySelectCategoryFrame, ViewEntryFrame, EditEntryFrame]
 
         self.frames = {frame_class: None for frame_class in frame_classes}
         self.current_frame = None  # Track the current frame
@@ -561,7 +754,6 @@ class WorldBuilderApp(tk.Tk):
 
         # Bind the closing event to the on_closing method
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
-
 
     def create_menu_bar(self):
         # Create a menu bar
