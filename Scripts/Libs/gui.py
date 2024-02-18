@@ -359,8 +359,17 @@ class EditEntryFrame(tk.Frame):
         tag_label = tk.Label(self.inner_frame, text='Tags')
         tag_label.pack(pady=5)
 
+        if self.app_data.selected_entry_data:
+            tags = backend_logic.get_all_tags(self.app_data.session, self.app_data.url)
+
+            if self.app_data.selected_entry_data['name'] in tags:
+                tags.remove(self.app_data.selected_entry_data['name'])
+        
+        else:
+            tags = backend_logic.get_all_tags(self.app_data.session, self.app_data.url)
+
         # Combobox for tags
-        self.tag_combobox = ttk.Combobox(self.inner_frame, values=backend_logic.get_all_tags(self.app_data.session, self.app_data.url), state='readonly')
+        self.tag_combobox = ttk.Combobox(self.inner_frame, values=tags, state='readonly')
         self.tag_combobox.pack(pady=5)
 
         # Listbox to display existing tags
@@ -438,6 +447,8 @@ class EditEntryFrame(tk.Frame):
         # Populate the Listbox with existing tags
         existing_tags = self.app_data.selected_entry_data['tags'].split(', ')
         for tag in existing_tags:
+            if tag == self.app_data.selected_entry_data['name']:
+                continue
             self.tag_listbox.insert(tk.END, tag)
 
         self.app_data.selected_entry_data = None
@@ -538,6 +549,9 @@ class WorldBuilderApp(tk.Tk):
 
         self.app_data = AppData()
 
+        # Create the menu bar
+        self.create_menu_bar()
+
         frame_classes = [WorldSelectionFrame, WorldOverviewFrame, NewEntrySelectCategoryFrame, EditEntryFrame]
 
         self.frames = {frame_class: None for frame_class in frame_classes}
@@ -547,6 +561,19 @@ class WorldBuilderApp(tk.Tk):
 
         # Bind the closing event to the on_closing method
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+
+    def create_menu_bar(self):
+        # Create a menu bar
+        menubar = tk.Menu(self)
+
+        # Create a file menu
+        file_menu = tk.Menu(menubar, tearoff=0)
+        file_menu.add_command(label="Exit", command=self.on_closing)
+        menubar.add_cascade(label="File", menu=file_menu)
+
+        # Add the menu bar to the application window
+        self.config(menu=menubar)
 
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):

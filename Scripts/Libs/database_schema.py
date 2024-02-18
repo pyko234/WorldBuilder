@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, Column, Integer, String, Text, BLOB
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy import inspect
 
 
 Base = declarative_base()

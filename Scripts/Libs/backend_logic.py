@@ -1,10 +1,12 @@
 from sqlalchemy import create_engine, inspect, text, event
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import SQLAlchemyError
 from pathlib import Path
 from Scripts.Libs.database_schema import WorldBuilder
 from tkinter import messagebox, simpledialog
 from sys import exit
 import traceback
+import json
 import os
 
 script_directory = Path(os.path.dirname(os.path.abspath(__file__)))
@@ -322,7 +324,6 @@ def veiw_world_map(session, database_url):
         traceback.print_exc()
 
         print(f"Error viewing world map: {e}")
-
 
 
 if __name__ == '__main__':
