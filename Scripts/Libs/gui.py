@@ -70,6 +70,9 @@ class WorldSelectionFrame(tk.Frame):
         
         if edit_mode == "Edit":
             self.app_data.edit = True
+        
+        else:
+            self.app_data.edit = False
 
         # Get the URL from the dictionary using the selected_world
         database_url = self.worlds[selected_world]
@@ -122,8 +125,9 @@ class WorldOverviewFrame(tk.Frame):
         label = tk.Label(self, text=self.label_text_var.get())
         label.pack(pady=10)
 
-        select_map_button = tk.Button(self, text='Select Map', command=self.select_map)
-        select_map_button.pack(pady=10)
+        if self.app_data.edit:
+            select_map_button = tk.Button(self, text='Select Map', command=self.select_map)
+            select_map_button.pack(pady=10)
 
         view_map_button = tk.Button(self, text='View World Map', command=self.view_map)
         view_map_button.pack(pady=10)
@@ -289,6 +293,7 @@ class NewEntrySelectCategoryFrame(tk.Frame):
              self.app_data.selected_category = selected_item.replace(' ', '_').lower()
              self.controller.show_frame(EditEntryFrame)
 
+
 class ViewEntryFrame(tk.Frame):
     def __init__(self, parent, controller, app_data):
         tk.Frame.__init__(self, parent)
@@ -371,7 +376,7 @@ class ViewEntryFrame(tk.Frame):
         # Bind the on_tag_double_click command
         self.tag_listbox.bind('<Double-1>', self.on_tag_double_click)
 
-        back_button = tk.Button(self, text="Back", command=lambda: self.controller.show_frame(self.app_data.previous_frame))
+        back_button = tk.Button(self, text="Back", command=lambda: self.controller.show_frame(WorldOverviewFrame))
         back_button.pack(pady=10)
 
         self.insert_data_if_exists()
@@ -379,8 +384,6 @@ class ViewEntryFrame(tk.Frame):
     def insert_data_if_exists(self):
         if not self.app_data.selected_entry_data:
             return
-        
-        print(self.app_data.selected_entry_data['name'])
 
         for table, textbox in self.text_widgets.items():
             textbox.configure(text=self.app_data.selected_entry_data[table])
@@ -471,8 +474,6 @@ class ViewEntryFrame(tk.Frame):
 
         # Deselect the tag after opening the new window
         self.tag_listbox.selection_clear(selected_index)
-
-        
 
 
 class EditEntryFrame(tk.Frame):
@@ -584,7 +585,7 @@ class EditEntryFrame(tk.Frame):
         save_button = tk.Button(button_frame, text='Save', command=self.save)
         save_button.pack(side=tk.RIGHT, padx=10)
 
-        back_button = tk.Button(button_frame, text='Back', command=lambda: self.controller.show_frame(self.app_data.previous_frame))
+        back_button = tk.Button(button_frame, text='Back', command=lambda: self.controller.show_frame(WorldOverviewFrame))
         back_button.pack(side=tk.LEFT, padx=10)
 
         self.insert_data_if_exists()
@@ -780,8 +781,8 @@ class WorldBuilderApp(tk.Tk):
             frame = cont(self, self, self.app_data)
             self.frames[cont] = frame
 
-        # Save the instance of the current frame
-        self.app_data.previous_frame = self.current_frame
+        # Save the class of the current frame
+        self.app_data.previous_frame = cont  # <-- Store the class, not the instance
 
         # Hide the current frame
         if self.current_frame:
