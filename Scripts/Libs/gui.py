@@ -630,10 +630,15 @@ class EditEntryFrame(tk.Frame):
         save_button = tk.Button(button_frame, text='Save', command=self.save)
         save_button.pack(side=tk.RIGHT, padx=10)
 
-        back_button = tk.Button(button_frame, text='Back', command=lambda: self.controller.show_frame(WorldOverviewFrame))
+        back_button = tk.Button(button_frame, text='Back', command=self.go_back)
         back_button.pack(side=tk.LEFT, padx=10)
 
         self.insert_data_if_exists()
+
+    def go_back(self):
+        self.app_data.selected_entry_data = None
+        self.app_data.previous_entry_data = None
+        self.controller.show_frame(WorldOverviewFrame)
 
     def save(self):
         data_to_write = {}
@@ -708,10 +713,6 @@ class EditEntryFrame(tk.Frame):
         # Get the selected tag from the tag_listbox
         selected_index = self.tag_listbox.curselection()
         selected_tag = self.tag_listbox.get(self.tag_listbox.curselection())
-
-        if not self.app_data.previous_entry_data:
-            # Store the previous information 
-            self.app_data.previous_entry_data = self.app_data.selected_entry_data
 
         # Retrieve information about the selected tag
         self.app_data.selected_entry_data = backend_logic.get_data_for_entry(self.app_data.session, selected_tag, self.app_data.url)
@@ -794,6 +795,8 @@ class EditEntryFrame(tk.Frame):
         window.destroy()
 
         self.app_data.selected_entry_data = self.app_data.previous_entry_data
+        self.app_data.previous_entry_data = None
+        self.app_data.selected_category = backend_logic.get_tag_location(self.app_data.session, self.app_data.selected_entry_data['name'], self.app_data.url)
 
         new_frame = EditEntryFrame(self.parent, self.controller, self.app_data)
 
