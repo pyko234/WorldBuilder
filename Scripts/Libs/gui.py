@@ -834,6 +834,8 @@ class WorldBuilderApp(tk.Tk):
 
     def on_closing(self):
         if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            if self.app_data.session:
+                self.app_data.session.close()
             self.destroy()
 
     def show_frame(self, cont):
