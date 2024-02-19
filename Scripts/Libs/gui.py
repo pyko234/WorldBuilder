@@ -376,17 +376,18 @@ class ViewEntryFrame(tk.Frame):
         self.image.bind('<Double-1>', self.view_original_image)
 
         tag_label = tk.Label(self.inner_frame, text='Tags')
-        tag_label.grid(row=current_row + 4, column=0, sticky="w", padx=5, pady=5)
-
-        # Listbox to display existing tags
         self.tag_listbox = tk.Listbox(self.inner_frame, selectmode=tk.MULTIPLE)
-        self.tag_listbox.grid(row=current_row + 5, column=1, sticky="w", padx=5, pady=5)
+        
+        if not isinstance(self.parent, tk.Toplevel):
+            tag_label.grid(row=current_row + 4, column=0, sticky="w", padx=5, pady=5)
 
-        # Bind the on_tag_double_click command
-        self.tag_listbox.bind('<Double-1>', self.on_tag_double_click)
+            self.tag_listbox.grid(row=current_row + 5, column=1, sticky="w", padx=5, pady=5)
 
-        back_button = tk.Button(self, text="Back", command=lambda: self.controller.show_frame(WorldOverviewFrame))
-        back_button.pack(pady=10)
+            # Bind the on_tag_double_click command
+            self.tag_listbox.bind('<Double-1>', self.on_tag_double_click)
+
+            back_button = tk.Button(self, text="Back", command=lambda: self.controller.show_frame(WorldOverviewFrame))
+            back_button.pack(pady=10)
 
         self.insert_data_if_exists()
 
@@ -706,7 +707,7 @@ class EditEntryFrame(tk.Frame):
         new_window.protocol("WM_DELETE_WINDOW", lambda: self.on_window_close(new_window))
 
         # Create a new instance of EditEntryFrame with the info from the selected tag
-        new_frame = EditEntryFrame(new_window, self.controller, self.app_data)
+        new_frame = ViewEntryFrame(new_window, self.controller, self.app_data)
 
         # Pack the EditEntryFrame into the new window
         new_frame.pack(expand=True, fill="both", pady=20, padx=20)
