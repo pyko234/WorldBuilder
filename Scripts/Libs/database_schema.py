@@ -14,7 +14,7 @@ class WorldBuilder:
         self.table_classes = {
             'tags': WorldBuilder.Tag,
             'world': WorldBuilder.World,
-            'planes': WorldBuilder.Planes_of_Exsitence,
+            'planes_of_existence': WorldBuilder.Planes_of_Existence,
             'continents': WorldBuilder.Continents,
             'regions': WorldBuilder.Regions,
             'countries': WorldBuilder.Countries,
@@ -39,8 +39,8 @@ class WorldBuilder:
         name = Column(Text, primary_key=True)
         world_map = Column(BLOB, nullable=True)
 
-    class Planes_of_Exsitence(Base):
-        __tablename__ = 'planes'
+    class Planes_of_Existence(Base):
+        __tablename__ = 'planes_of_existence'
         id = Column(Integer, primary_key=True)
         name = Column(String, nullable=False)
         description = Column(Text, nullable=True)
@@ -139,6 +139,7 @@ class WorldBuilder:
         tags = Column(Text, nullable=True)
 
     def get_table_class(self, table_name):
+
         # Returns the class object for a given table name.
         return self.table_classes.get(table_name)
 

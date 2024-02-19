@@ -325,6 +325,17 @@ def veiw_world_map(session, database_url):
 
         print(f"Error viewing world map: {e}")
 
+def filter_tag_list_by_table(session, database_url, tag_list, table_name):
+    world_builder = WorldBuilder(database_url)
+    tag_table = world_builder.get_table_class('tags')
+
+    filtered_tags = session.query(tag_table).filter(tag_table.entry_name.in_(tag_list)).all()
+
+    print([x.entry_name for x in filtered_tags])
+
+
+
+
 
 if __name__ == '__main__':
     find_database()

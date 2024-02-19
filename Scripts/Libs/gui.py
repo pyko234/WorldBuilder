@@ -143,15 +143,15 @@ class WorldOverviewFrame(tk.Frame):
         back_button = ttk.Button(button_frame, text="Back", command=lambda: self.controller.show_frame(WorldSelectionFrame))
         back_button.pack(side=tk.LEFT, padx=20)
  
-        create_button = ttk.Button(button_frame, text="Create New Entry", command=lambda: self.controller.show_frame(NewEntrySelectCategoryFrame))
-        create_button.pack(side=tk.RIGHT, padx=20)
+        if self.app_data.edit:
+            create_button = ttk.Button(button_frame, text="Create New Entry", command=lambda: self.controller.show_frame(NewEntrySelectCategoryFrame))
+            create_button.pack(side=tk.RIGHT, padx=20)
 
         button_frame.pack(side="bottom", pady=20)
 
     def create_dynamic_category_widgets(self):
         if not self.app_data.session:
             return
-        
         
         table_names = backend_logic.get_table_names(self.app_data.session)
         self.app_data.table_names = table_names
@@ -381,15 +381,24 @@ class ViewEntryFrame(tk.Frame):
         if not isinstance(self.parent, tk.Toplevel):
             tag_label.grid(row=current_row + 4, column=0, sticky="w", padx=5, pady=5)
 
+            filter_options = ['All Categories'] + [x.replace('_', ' ').title() for x in self.app_data.table_names if x != 'tags']
+
             self.tag_listbox.grid(row=current_row + 5, column=1, sticky="w", padx=5, pady=5)
+            self.tag_filter_combobox = ttk.Combobox(self.inner_frame, values=filter_options, state='readonly')
+            self.tag_filter_combobox.grid(row=current_row + 5, column=2, sticky='w')
+            self.tag_filter_combobox.bind("<<ComboboxSelected>>", self.update_tag_listbox)
 
             # Bind the on_tag_double_click command
             self.tag_listbox.bind('<Double-1>', self.on_tag_double_click)
 
-            back_button = tk.Button(self, text="Back", command=lambda: self.controller.show_frame(WorldOverviewFrame))
+            back_button = tk.Button(self, text="Back", command=self.go_back)
             back_button.pack(pady=10)
 
         self.insert_data_if_exists()
+    
+    def go_back(self):
+        self.app_data.selected_entry_data = None
+        self.controller.show_frame(WorldOverviewFrame)
 
     def insert_data_if_exists(self):
         if not self.app_data.selected_entry_data:
@@ -416,8 +425,6 @@ class ViewEntryFrame(tk.Frame):
             if tag == self.app_data.selected_entry_data['name']:
                 continue
             self.tag_listbox.insert(tk.END, tag)
-
-        self.app_data.selected_entry_data = None
 
     def on_frame_configure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -466,6 +473,13 @@ class ViewEntryFrame(tk.Frame):
             # If image data does not exist, show a message
             messagebox.showinfo("No Image", "No image data available.")
 
+    def update_tag_listbox(self, event):
+        selected_option = self.tag_filter_combobox.get()
+
+        tag_list = self.app_data.selected_entry_data['tags'].split(',')
+
+        backend_logic.filter_tag_list_by_table(self.app_data.session, self.app_data.url, tag_list, selected_option)
+        
     def on_tag_double_click(self, event):
         # Get the selected tag from the tag_listbox
         selected_index = self.tag_listbox.curselection()
