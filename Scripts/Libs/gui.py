@@ -318,7 +318,7 @@ class ViewEntryFrame(tk.Frame):
         name_label = tk.Label(name_frame, text="Name")
         name_label.grid(row=0, column=0, sticky="w", padx=5, pady=5)
         
-        self.name_text = tk.Label(name_frame, text="Cloud Strife")
+        self.name_text = tk.Label(name_frame)
         self.name_text.grid(row=1, column=1, sticky="w", padx=5, pady=5)
 
         separator = tk.Frame(self, bd=10, relief='flat', height=2, background='grey')
@@ -398,12 +398,13 @@ class ViewEntryFrame(tk.Frame):
     
     def go_back(self):
         self.app_data.selected_entry_data = None
+        self.app_data.previous_entry_data = None
         self.controller.show_frame(WorldOverviewFrame)
 
     def insert_data_if_exists(self):
         if not self.app_data.selected_entry_data:
             return
-        
+    
         if not self.app_data.previous_entry_data:
             self.app_data.previous_entry_data = self.app_data.selected_entry_data
 
@@ -421,10 +422,13 @@ class ViewEntryFrame(tk.Frame):
 
         # Populate the Listbox with existing tags
         existing_tags = self.app_data.selected_entry_data['tags'].split(', ')
+
         for tag in existing_tags:
             if tag == self.app_data.selected_entry_data['name']:
                 continue
             self.tag_listbox.insert(tk.END, tag)
+
+        self.app_data.selected_entry_data = None
 
     def on_frame_configure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -485,10 +489,6 @@ class ViewEntryFrame(tk.Frame):
         selected_index = self.tag_listbox.curselection()
         selected_tag = self.tag_listbox.get(self.tag_listbox.curselection())
 
-        if not self.app_data.previous_entry_data:
-            # Store the previous information 
-            self.app_data.previous_entry_data = self.app_data.selected_entry_data
-
         # Retrieve information about the selected tag
         self.app_data.selected_entry_data = backend_logic.get_data_for_entry(self.app_data.session, selected_tag, self.app_data.url)
         self.app_data.selected_category = backend_logic.get_tag_location(self.app_data.session, selected_tag, self.app_data.url)
@@ -513,6 +513,8 @@ class ViewEntryFrame(tk.Frame):
         window.destroy()
 
         self.app_data.selected_entry_data = self.app_data.previous_entry_data
+        self.app_data.previous_entry_data = None
+        self.app_data.selected_category = backend_logic.get_tag_location(self.app_data.session, self.app_data.selected_entry_data['name'], self.app_data.url)
 
         new_frame = ViewEntryFrame(self.parent, self.controller, self.app_data)
 
