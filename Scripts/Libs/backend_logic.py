@@ -329,10 +329,14 @@ def filter_tag_list_by_table(session, database_url, tag_list, table_name):
     world_builder = WorldBuilder(database_url)
     tag_table = world_builder.get_table_class('tags')
 
-    filtered_tags = session.query(tag_table).filter(tag_table.entry_name.in_(tag_list)).all()
+    all_tags = session.query(tag_table).filter(tag_table.entry_name.in_(tag_list)).all()
 
-    print([x.entry_name for x in filtered_tags])
+    if table_name == 'all_categories':
+        return [x.entry_name for x in all_tags]
 
+    filtered_tags = [x.entry_name for x in all_tags if x.entry_location.split('/')[0] == table_name]
+
+    return filtered_tags
 
 
 

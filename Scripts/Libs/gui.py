@@ -428,7 +428,6 @@ class ViewEntryFrame(tk.Frame):
                 continue
             self.tag_listbox.insert(tk.END, tag)
 
-        self.app_data.selected_entry_data = None
 
     def on_frame_configure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
@@ -478,12 +477,18 @@ class ViewEntryFrame(tk.Frame):
             messagebox.showinfo("No Image", "No image data available.")
 
     def update_tag_listbox(self, event):
-        selected_option = self.tag_filter_combobox.get()
+        selected_option = self.tag_filter_combobox.get().replace(' ', '_').lower()
 
         tag_list = self.app_data.selected_entry_data['tags'].split(',')
+        tag_list = [x.strip() for x in tag_list]
 
-        backend_logic.filter_tag_list_by_table(self.app_data.session, self.app_data.url, tag_list, selected_option)
+        filtered_tags = backend_logic.filter_tag_list_by_table(self.app_data.session, self.app_data.url, tag_list, selected_option)
         
+        self.tag_listbox.delete(0, tk.END)
+        
+        for tag in filtered_tags:
+            self.tag_listbox.insert(tk.END, tag)
+
     def on_tag_double_click(self, event):
         # Get the selected tag from the tag_listbox
         selected_index = self.tag_listbox.curselection()
@@ -611,9 +616,19 @@ class EditEntryFrame(tk.Frame):
         self.tag_combobox = ttk.Combobox(self.inner_frame, values=tags, state='readonly')
         self.tag_combobox.pack(pady=5)
 
+        # Add Frame to pack the tag_listbox and filter combo
+        tag_frame = tk.Frame(self.inner_frame)
+        tag_frame.pack(pady=10)
+
         # Listbox to display existing tags
-        self.tag_listbox = tk.Listbox(self.inner_frame, selectmode=tk.MULTIPLE)
-        self.tag_listbox.pack(pady=5)
+        self.tag_listbox = tk.Listbox(tag_frame, selectmode=tk.MULTIPLE)
+        self.tag_listbox.pack(side='left', padx=5)
+
+        filter_options = ['All Categories'] + [x.replace('_', ' ').title() for x in self.app_data.table_names if x != 'tags']
+
+        self.tag_filter_combobox = ttk.Combobox(tag_frame, values=filter_options, state='readonly')
+        self.tag_filter_combobox.pack(side='right', padx=5)
+        self.tag_filter_combobox.bind("<<ComboboxSelected>>", self.update_tag_listbox)
 
         # Bind the on_tag_double_click command
         self.tag_listbox.bind('<Double-1>', self.on_tag_double_click)
@@ -697,8 +712,6 @@ class EditEntryFrame(tk.Frame):
             if tag == self.app_data.selected_entry_data['name']:
                 continue
             self.tag_listbox.insert(tk.END, tag)
-
-        self.app_data.selected_entry_data = None
 
     def add_tag(self, event):
         selected_tag = self.tag_combobox.get()
@@ -788,6 +801,19 @@ class EditEntryFrame(tk.Frame):
         else:
             # If image data does not exist, show a message
             messagebox.showinfo("No Image", "No image data available.")
+
+    def update_tag_listbox(self, event):
+        selected_option = self.tag_filter_combobox.get().replace(' ', '_').lower()
+
+        tag_list = self.app_data.selected_entry_data['tags'].split(',')
+        tag_list = [x.strip() for x in tag_list]
+
+        filtered_tags = backend_logic.filter_tag_list_by_table(self.app_data.session, self.app_data.url, tag_list, selected_option)
+        
+        self.tag_listbox.delete(0, tk.END)
+        
+        for tag in filtered_tags:
+            self.tag_listbox.insert(tk.END, tag)
 
     def on_window_close(self, window):
         self.canvas.unbind_all("<MouseWheel>")
