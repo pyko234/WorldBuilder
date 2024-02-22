@@ -36,7 +36,7 @@ class WorldSelectionFrame(tk.Frame):
         self.world_var.set(world_names[0])
 
         self.edit_var = tk.StringVar()
-        self.edit_var.set("View")
+        self.edit_var.set("Edit")
 
         # Create dropdown for world selection
         world_label = ttk.Label(self, text="Select World:")
@@ -49,10 +49,10 @@ class WorldSelectionFrame(tk.Frame):
         edit_view_frame = ttk.Frame(self)
         edit_view_frame.pack(padx=10, pady=10)
 
-        view_radio = ttk.Radiobutton(edit_view_frame, text="View", variable=self.edit_var, value="View")
+        view_radio = ttk.Radiobutton(edit_view_frame, text="Edit", variable=self.edit_var, value="Edit")
         view_radio.pack(padx=10, pady=10)
 
-        edit_radio = ttk.Radiobutton(edit_view_frame, text="Edit", variable=self.edit_var, value="Edit")
+        edit_radio = ttk.Radiobutton(edit_view_frame, text="View", variable=self.edit_var, value="View")
         edit_radio.pack(padx=10, pady=10)
 
         # Button to proceed
@@ -86,9 +86,10 @@ class WorldSelectionFrame(tk.Frame):
 
     def get_worlds(self):
         script_directory = Path(os.path.dirname(os.path.abspath(__file__)))
-        path = script_directory.parent.parent / "Lib" / "db"
+        path = script_directory / "db"
 
         names = {}
+
         for file in os.listdir(path):
             if file.endswith("_database.db"):
                 database_url = f"sqlite:///{path / file}"
