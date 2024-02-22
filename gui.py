@@ -44,8 +44,28 @@ class AppData:
         self.edit = None
 
 
-
 class WorldSelectionFrame(tk.Frame):
+    """
+    Represents a frame for selecting a world and choosing between edit and view modes.
+
+    Args:
+        parent (tk.Widget): The parent widget to which this frame belongs.
+        controller (tk.Widget): The controller responsible for managing the application flow.
+        app_data (AppData): An instance of the AppData class containing application-wide data.
+
+    Attributes:
+        controller (tk.Widget): The controller widget responsible for managing application flow.
+        app_data (AppData): An instance of the AppData class containing application-wide data.
+        worlds (dict): A dictionary containing world names mapped to their respective data.
+        world_var (tk.StringVar): Variable to hold the selected world name.
+        edit_var (tk.StringVar): Variable to hold the selected mode (Edit/View).
+
+    Methods:
+        proceed(): Proceeds to the next step based on the selected world and edit mode.
+        get_worlds(): Retrieves the available worlds and their corresponding database URLs.
+        create_new(): Creates a new database for a new world.
+    """
+
     def __init__(self, parent, controller, app_data):
         """
         Initialize the frame for selecting a world and choosing between edit and view modes.
@@ -219,139 +239,301 @@ class WorldSelectionFrame(tk.Frame):
         
 
 class WorldOverviewFrame(tk.Frame):
+    """
+    Represents a frame for providing an overview of a selected world, including entry categories and entries.
+
+    Args:
+        parent (tk.Widget): The parent widget to which this frame belongs.
+        controller (tk.Widget): The controller responsible for managing the application flow.
+        app_data (AppData): An instance of the AppData class containing application-wide data.
+
+    Attributes:
+        controller (tk.Widget): The controller widget responsible for managing application flow.
+        app_data (AppData): An instance of the AppData class containing application-wide data.
+        label_text_var (tk.StringVar): Variable to hold the text for displaying the selected world name.
+        listbox_dict (dict): A dictionary mapping category names to their respective listbox widgets.
+
+    Methods:
+        create_dynamic_category_widgets(): Creates dynamic category widgets based on available tables in the database.
+        update_combobox(): Updates the Combobox widget with new values.
+        update_label_text(): Updates the label text to display the selected world name.
+        update_listboxes(): Updates the listboxes with entry names for each category.
+        on_double_click(event, table_name): Handles double-click events on listbox items to view or edit entry details.
+        select_map(): Opens a file dialog to select an image file for the world map.
+        save_image(image_data): Saves the selected image data as the world map in the database.
+        view_map(): Retrieves and displays the world map from the database in a new window.
+    """
+
     def __init__(self, parent, controller, app_data):
+        """
+        Initializes the WorldOverviewFrame instance.
+
+        Args:
+            parent (tk.Widget): The parent widget to which this frame belongs.
+            controller (tk.Widget): The controller responsible for managing the application flow.
+            app_data (AppData): An instance of the AppData class containing application-wide data.
+
+        Attributes:
+            parent (tk.Widget): The parent widget to which this frame belongs.
+            controller (tk.Widget): The controller responsible for managing the application flow.
+            app_data (AppData): An instance of the AppData class containing application-wide data.
+            label_text_var (tk.StringVar): Variable to hold the text for displaying the selected world name.
+
+        Note:
+            This method sets up the GUI elements for displaying information about the selected world,
+            including buttons for selecting and viewing the world map, and options for navigating back
+            or creating a new entry.
+        """
+
+        # Create the frame and pass attributes
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.controller = controller
         self.app_data = app_data
 
+        # Create StringVar for World Label
         self.label_text_var = tk.StringVar()
-
         self.label_text_var.set(self.app_data.selected_world)
         label = tk.Label(self, text=self.label_text_var.get())
         label.pack(pady=10)
 
+        # Create Select Map button if mode is edit
         if self.app_data.edit:
             select_map_button = tk.Button(self, text='Select Map', command=self.select_map)
             select_map_button.pack(pady=10)
 
+        # View Map button
         view_map_button = tk.Button(self, text='View World Map', command=self.view_map)
         view_map_button.pack(pady=10)
 
+        # Entries label
         selection_label = tk.Label(self, text="Entries:")
         selection_label.pack(pady=10)
 
+        # Create category widgets dynamically using create dynamic category widgets method
         self.create_dynamic_category_widgets()
-        self.update_label_text()
 
+        # Create a frame to hold the button widgets at the bottom of the main frame
         button_frame = tk.Frame(self)
+        button_frame.pack(side="bottom", pady=20)
 
+        # Back button, returns to WorldSelectionFrame
         back_button = ttk.Button(button_frame, text="Back", command=lambda: self.controller.show_frame(WorldSelectionFrame))
         back_button.pack(side=tk.LEFT, padx=20)
  
+        # Create Entry button, if mode is edit
         if self.app_data.edit:
             create_button = ttk.Button(button_frame, text="Create New Entry", command=lambda: self.controller.show_frame(NewEntrySelectCategoryFrame))
             create_button.pack(side=tk.RIGHT, padx=20)
 
-        button_frame.pack(side="bottom", pady=20)
-
     def create_dynamic_category_widgets(self):
+        """
+        Dynamically creates widgets for displaying categories and entries.
+
+        Retrieves table names from the application data session.
+        Constructs frames, labels, and listboxes for each category.
+        Binds double-click events on listboxes to handle entry selection.
+
+        Note:
+            This method is called to populate the frame with dynamic widgets representing categories and entries.
+
+        Returns:
+            None
+        """
+
+        # If not session exists, end the method
         if not self.app_data.session:
             return
         
+        # Store table names from the current session
         table_names = backend_logic.get_table_names(self.app_data.session)
         self.app_data.table_names = table_names
     
         # Define the number of columns in the layout
         num_columns = 3
 
+        # Canvas widget to allow scrolling
         canvas_frame = tk.Frame(self)
         canvas_frame.pack(fill="both", expand=True)
-
         canvas = tk.Canvas(canvas_frame)
-        canvas.pack(side="left", fill="both", expand=True)
+        canvas.pack(side="left", fill="both", expand=True, padx=5)
 
+        # Scroll bar widget packed to the right
         scrollbar = tk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
         scrollbar.pack(side="right", fill="y")
 
+        # Create frame to hold frames created below and create the scrollable window
         category_frames = tk.Frame(canvas)
         canvas.create_window((0, 0), window=category_frames, anchor="nw")
 
+        # Create listbox dictionary to hold the entry listboxes
         self.listbox_dict = {}
 
+        # Iterate through 0 to the length of the table names stepping the number of columns
         for i in range(0, len(table_names), num_columns):
-            category_frame = tk.Frame(category_frames)
 
+            # Create category frame to hold the frames generated below
+            category_frame = tk.Frame(category_frames)
+            category_frame.pack(fill='both', side=tk.TOP, pady=10)
+
+            # Iterate through i to lowest of i + number of columns of the total length of table names
             for x in range(i, min(i + num_columns, len(table_names))):
+
+                # Create the overall frame for the label and listbox for entries in a horizontal line
                 individual_frame = tk.Frame(category_frame)
                 individual_frame.pack(side=tk.LEFT)
 
+                # Category label
                 label = tk.Label(individual_frame, text=table_names[x].replace('_', ' ').title())
                 label.pack(side=tk.TOP)
 
+                # Category listbox
                 listbox = tk.Listbox(individual_frame, height=10)
                 listbox.pack(side=tk.TOP, padx=10, fill='both', expand=True)
 
+                # Bind the listbox doubleclick to the on_double_click method
                 listbox.bind('<Double-1>', lambda event, table_name=table_names[x]: self.on_double_click(event, table_name))
 
+                # Save the listbox and name in dictionary
                 self.listbox_dict[table_names[x]] = listbox
 
-            category_frame.pack(fill='both', side=tk.TOP, pady=10)
+                # Configure the canvas to update the vertical scrollbar
+                canvas.configure(yscrollcommand=scrollbar.set)
 
-        canvas.configure(yscrollcommand=scrollbar.set)
-        canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1 * (event.delta / 120)), "units"))
-        canvas.update_idletasks()
-        canvas.config(scrollregion=canvas.bbox("all"))
-        canvas.pack_configure(side="left", fill="both", expand=True, padx=(0, scrollbar.winfo_width()))
+                # Bind the MouseWheel event to scroll the canvas vertically
+                canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1 * (event.delta / 120)), "units"))
 
-        self.update_listboxes()
+                # Update the canvas tasks while the program is idle
+                canvas.update_idletasks()
 
-    def update_combobox(self):
-        # Clear and update Combobox with new values
-        table_names = self.get_table_names()
-        self.world_combobox['values'] = table_names
-        self.world_combobox.set(table_names[0])
+                # Configure the canvas to fit the bounding box of all elements
+                canvas.config(scrollregion=canvas.bbox("all"))
 
-    def update_label_text(self):
-        selected_world = self.app_data.selected_world
-        self.label_text_var.set(selected_world)
+                # Configure the packing of the canvas within its container widget
+                canvas.pack_configure(side="left", fill="both", expand=True, padx=(0, scrollbar.winfo_width()))
+
+                # Update the listboxes within the frame
+                self.update_listboxes()
 
     def update_listboxes(self):
+        """
+        Update the listboxes with entries retrieved from the database.
+
+        Retrieves entry names for each table from the database using the session and URL
+        stored in the AppData instance. Iterates over each table name and corresponding
+        listbox in the dictionary of listboxes. For each table name, retrieves entry names
+        using backend_logic.get_entry_names() and inserts them into the corresponding listbox.
+
+        Returns:
+            None
+        """
+        # Iterate through tables and listboxes in the frame
         for table_name, listbox in self.listbox_dict.items():
+
+            # Retrieve entries for current table
             entries = backend_logic.get_entry_names(self.app_data.session, table_name, self.app_data.url)
             
+            # Check if entries has data
             if entries:
+
+                # Iterate through the entries
                 for entry in entries:
+
+                    # Insert the entry into the listbox
                     listbox.insert(tk.END, entry)
 
     def on_double_click(self, event, table_name):
+        """
+        Handle double-click events on listbox items.
+
+        Retrieves the selected item from the event and uses it to get data for the entry
+        from the database using backend_logic.get_data_for_entry(). Updates the selected
+        entry data and category in the AppData instance. If in edit mode, navigates to the
+        EditEntryFrame; otherwise, navigates to the ViewEntryFrame.
+
+        Args:
+            event (tk.Event): The event object representing the double-click event.
+            table_name (str): The name of the table associated with the listbox.
+
+        Returns:
+            None
+        """
+
+        # Retrieve the entry that was double clicked
         selected_item = event.widget.get(event.widget.curselection())
 
+        # Retrieve the data for the entry
         data = backend_logic.get_data_for_entry(self.app_data.session, selected_item, self.app_data.url)
 
+        # Store the data in the app_data class
         self.app_data.selected_entry_data = data
         self.app_data.selected_category = table_name
 
+        # Check for edit mode; if True pass the EditEntryFrame
         if self.app_data.edit:
             self.controller.show_frame(EditEntryFrame)
         
+        # if False pass the ViewEntryFrame
         else:
             self.controller.show_frame(ViewEntryFrame)
 
     def select_map(self):
+        """
+        Opens a file dialog for the user to select a map image file. If a file is selected,
+        reads the file, converts it to bytes, and calls the save_image method to handle the
+        image data persistence.
+
+        This method allows users to select an image that represents a world map, which is
+        then stored in the application's backend storage system for later retrieval and display.
+
+        Returns:
+            None
+        """
+
         # Open a file dialog to select an image file
         file_path = filedialog.askopenfilename()
+
+        # Check for file
         if file_path:
+
             # Read the image file and convert it to bytes
             with open(file_path, 'rb') as file:
                image_data = file.read()
+
             # Display the selected image
             self.save_image(image_data)
     
     def save_image(self, image_data):
+        """
+        Saves the provided image data to the backend storage system.
+
+        Args:
+            image_data (bytes): The image data to be saved.
+
+        This method invokes the add_world_map function from the backend logic module,
+        passing the image data along with the current session and database URL stored
+        in the application data.
+
+        Returns:
+            None
+        """
+
+        # Save the image using the add_world_map function
         backend_logic.add_world_map(self.app_data.session, image_data, self.app_data.url)
 
     def view_map(self):
+        """
+        Retrieves map data from the database, converts it to an image, and displays it in a new window.
+
+        This method fetches map data from the backend logic module using the current session and database URL
+        stored in the application data. It then converts the data to an image using the PIL library. Next, it creates
+        a new window titled "World Map" using Tkinter's Toplevel widget. The image is displayed in the new window
+        using a Tkinter Label widget.
+
+        Returns:
+            None
+        """
+
         # Get map data from database
         map_data = backend_logic.veiw_world_map(self.app_data.session, self.app_data.url)
         
