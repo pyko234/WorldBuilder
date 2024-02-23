@@ -255,7 +255,6 @@ class WorldOverviewFrame(tk.Frame):
 
     Methods:
         create_dynamic_category_widgets(): Creates dynamic category widgets based on available tables in the database.
-        update_combobox(): Updates the Combobox widget with new values.
         update_label_text(): Updates the label text to display the selected world name.
         update_listboxes(): Updates the listboxes with entry names for each category.
         on_double_click(event, table_name): Handles double-click events on listbox items to view or edit entry details.
@@ -553,125 +552,228 @@ class WorldOverviewFrame(tk.Frame):
 
 
 class NewEntrySelectCategoryFrame(tk.Frame):
+    """
+    A Tkinter Frame subclass for selecting a category for a new entry within an application.
+
+    This frame displays a list of categories to the user and allows them to select one for a new entry.
+    The categories are displayed in a ListBox widget, and there are buttons for selection and navigation.
+
+    Attributes:
+        controller (misc): The controlling entity which manages frame transitions and data sharing between frames.
+        app_data (object): An object that holds application-wide data, including available categories.
+        listbox (tk.Listbox): The ListBox widget displaying the category options to the user.
+    """
+
     def __init__(self, parent, controller, app_data):
+        """
+        Initializes the NewEntrySelectCategoryFrame with a parent widget, a controller, and application data.
+
+        Args:
+            parent (tk.Widget): The parent widget.
+            controller (misc): The application's main controller that manages frame transitions and data sharing.
+            app_data (object): An object containing application-wide data, such as available categories.
+
+        The frame includes a label prompting the user to select a category, a ListBox for category selection,
+        and 'Select' and 'Back' buttons for actions and navigation.
+        """
+
+        # Create frame and store the controller and AppData
         tk.Frame.__init__(self, parent)
         self.controller = controller
         self.app_data = app_data
 
+        # Prompt label
         top_label = tk.Label(self, text='Please select a category for the new entry:')
         top_label.pack()
 
+        # Listbox for selecting entry type
         self.listbox = tk.Listbox(self, height=len(self.app_data.table_names))
         self.listbox.pack()
 
+        # Iterate through table names and add to listbox
         for item in self.app_data.table_names:
             self.listbox.insert(tk.END, item.replace('_', ' ').title())
 
+        # Select button
         select_button = tk.Button(self, text='Select', command=self.select_category)
         select_button.pack(side=tk.RIGHT, padx=20)
 
+        # Back Button, returns to WorldOverviewFrame
         back_button = tk.Button(self, text="Back", command=lambda: self.controller.show_frame(WorldOverviewFrame))
         back_button.pack(side=tk.LEFT, padx=20)
 
     def select_category(self):
-         selected_indices = self.listbox.curselection()
+        """
+            Handles the selection of a category from the listbox and updates the application data accordingly.
 
-         if selected_indices:
-             selected_item = self.listbox.get(selected_indices[0])
-             self.app_data.selected_category = selected_item.replace(' ', '_').lower()
-             self.controller.show_frame(EditEntryFrame)
+            This method retrieves the user's selection from the listbox, updates the application data with the selected
+            category, and triggers a frame transition to the EditEntryFrame for entry editing.
+
+            If no selection is made, the method does nothing.
+        """
+
+        # Retrieve the selected listbox item
+        selected_indices = self.listbox.curselection()
+
+        # Check selected indices for data
+        if selected_indices:
+
+            # Retrieve selected index
+            selected_item = self.listbox.get(selected_indices[0])
+
+            # Store the selected category
+            self.app_data.selected_category = selected_item.replace(' ', '_').lower()
+            
+            # Proceed to EditEntryFrame
+            self.controller.show_frame(EditEntryFrame)
 
 
 class ViewEntryFrame(tk.Frame):
+    """
+    A Tkinter Frame subclass for viewing details of a selected entry within an application.
+
+    This frame displays details of a selected entry, including textual information and optionally an image.
+    It provides functionality for navigating through entries, viewing images, and updating tags.
+
+    Attributes:
+        parent (tk.Widget): The parent widget.
+        controller (misc): The controlling entity which manages frame transitions and data sharing between frames.
+        app_data (object): An object that holds application-wide data, including selected entry details.
+        text_widgets (dict): A dictionary containing text widgets for displaying entry details.
+        image_data (bytes): Raw image data of the entry's photo, if available.
+    """
+
     def __init__(self, parent, controller, app_data):
+        """
+        Initializes the ViewEntryFrame with a parent widget, a controller, and application data.
+
+        Args:
+            parent (tk.Widget): The parent widget.
+            controller (misc): The application's main controller that manages frame transitions and data sharing.
+            app_data (object): An object containing application-wide data, such as selected entry details.
+
+        The frame includes labels and widgets for displaying entry details, including textual information and an image.
+        Navigation buttons are provided for returning to the previous frame.
+        """
+
+        # Create frame and store parent, controller, and app_data
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.controller = controller
         self.app_data = app_data
+
+        # Create variables to store as a class attribute
         self.text_widgets = {}
         self.image_data = None
-        self.canvas_widgets = []
 
+        # Guarded statement to enure a world is selected
         if not self.app_data.selected_world:
             return
 
+        # Get categories for entry by getting column names using session and selected_category
         self.column_names = backend_logic.get_column_names(self.app_data.session, self.app_data.selected_category)
 
+        # Entry Category label
         top_label = tk.Label(self, text=f"{self.app_data.selected_category.title()} Entry:")
         top_label.pack(fill='both')
 
+        # Name frame separate from scrollable frame
         name_frame = tk.Frame(self)
         name_frame.pack(pady=10, fill='both')
         
+        # Name label
         name_label = tk.Label(name_frame, text="Name")
         name_label.grid(row=0, column=0, sticky="w", padx=5, pady=5)
         
+        # Entry name
         self.name_text = tk.Label(name_frame)
         self.name_text.grid(row=1, column=1, sticky="w", padx=5, pady=5)
 
+        # Separator for easier scrolling
         separator = tk.Frame(self, bd=10, relief='flat', height=2, background='grey')
         separator.pack(fill='x')
 
+        # Frame to hold the canvas widget for scrolling
         canvas_frame = tk.Frame(self)
         canvas_frame.pack(fill='both', expand=True)
 
+        # Canvas widget for scrolling
         self.canvas = tk.Canvas(canvas_frame)
         self.canvas.pack(side='left', fill='both', expand=True)
 
-        self.canvas_widgets.append(self.canvas)
-
+        # Scrollbar
         self.scrollbar = tk.Scrollbar(canvas_frame, orient='vertical', command=self.canvas.yview)
         self.scrollbar.pack(side='right', fill='y')
 
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
-
+        # Scrollable frame
         self.inner_frame = tk.Frame(self.canvas)
         self.canvas.create_window((0, 0), window=self.inner_frame, anchor='nw')
 
+        # Assign creation of window to an id for configuring the scrolling
         self.inner_frame_id = self.canvas.create_window(0, 0, window=self.inner_frame, anchor='nw')
 
+        # Bind the configuration of the inner_frame to on_frame_configure method
         self.inner_frame.bind("<Configure>", self.on_frame_configure)
+
+        # Bind the configuration of the canvas to the on_canvas_confgigure method
         self.canvas.bind("<Configure>", self.on_canvas_configure)
 
+        # Configure the canvas yscrollcommand to the scroll bar
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
+
+        # Bind the mouse wheel event to on_mouse_wheel method
         self.canvas.bind_all("<MouseWheel>", lambda event: self.on_mouse_wheel(event, self.canvas))
 
-        current_row = 3
+        # Store the starting row
+        current_row = 0
 
-        for i in self.column_names[1:-1]:
-            if i == "tags":
+        # Iterate through column_names
+        for column_name in self.column_names:
+
+            # Check if column_name is in the following list and skip iteration if it is
+            if column_name in ["name", "tags", "image_data"]:
                 continue
 
-            label = tk.Label(self.inner_frame, text=i.capitalize())
+            # Label for column name
+            label = tk.Label(self.inner_frame, text=column_name.title())
             label.grid(row=current_row, column=0, sticky="w", padx=5, pady=5)
 
-            text_frame = tk.Frame(self.inner_frame)
-            text_frame.grid(row=current_row + 1, column=1, sticky="n", padx=5, pady=5)
+            # Label for data
+            text = tk.Label(self.inner_frame)
+            text.grid(row=current_row + 1, column=1, sticky="n", padx=5, pady=5)
 
-            text = tk.Label(text_frame)
-            text.pack()
+            # Store the text widget in dictionary with name
+            self.text_widgets[column_name] = text
 
-            self.text_widgets[i] = text
-
+            # Update current row
             current_row = current_row + 2
         
+        # Image label
         image_label = tk.Label(self.inner_frame, text="Photo")
         image_label.grid(row=current_row + 2, column=0, sticky="w", padx=5, pady=5)
 
+        # The image itself
         self.image = tk.Label(self.inner_frame)
         self.image.grid(row=current_row + 3, column=1, sticky="w", padx=5, pady=5)
 
+        # Bind the doubleclick on the image to view_original_image method
         self.image.bind('<Double-1>', self.view_original_image)
-
-        tag_label = tk.Label(self.inner_frame, text='Tags')
-        self.tag_listbox = tk.Listbox(self.inner_frame, selectmode=tk.MULTIPLE)
         
+        # Check if parent is main window or TopLevel window
         if not isinstance(self.parent, tk.Toplevel):
+
+            # Tag Label
+            tag_label = tk.Label(self.inner_frame, text='Tags')
             tag_label.grid(row=current_row + 4, column=0, sticky="w", padx=5, pady=5)
 
+            # Create list of options for filtering tags
             filter_options = ['All Categories'] + [x.replace('_', ' ').title() for x in self.app_data.table_names if x != 'tags']
 
+            # Tag Listbox
+            self.tag_listbox = tk.Listbox(self.inner_frame, selectmode=tk.MULTIPLE)
             self.tag_listbox.grid(row=current_row + 5, column=1, sticky="w", padx=5, pady=5)
+
+            # Combobox to hold the filter options, bound to update_tag_listbox on selection
             self.tag_filter_combobox = ttk.Combobox(self.inner_frame, values=filter_options, state='readonly')
             self.tag_filter_combobox.grid(row=current_row + 5, column=2, sticky='w')
             self.tag_filter_combobox.bind("<<ComboboxSelected>>", self.update_tag_listbox)
@@ -679,14 +781,24 @@ class ViewEntryFrame(tk.Frame):
             # Bind the on_tag_double_click command
             self.tag_listbox.bind('<Double-1>', self.on_tag_double_click)
 
+            # Back Button bound to go_back
             back_button = tk.Button(self, text="Back", command=self.go_back)
             back_button.pack(pady=10)
 
+        # Insert data if exists
         self.insert_data_if_exists()
     
     def go_back(self):
+        """
+            Handles the action of going back to the previous frame.
+
+            Clears selected entry data and switches the frame back the WorldOverviewFrame
+        """
+        # Empty both selected_entry_data and previous_entry_data for logic
         self.app_data.selected_entry_data = None
         self.app_data.previous_entry_data = None
+
+        # Show WorldOverviewFrame
         self.controller.show_frame(WorldOverviewFrame)
 
     def insert_data_if_exists(self):
@@ -715,7 +827,6 @@ class ViewEntryFrame(tk.Frame):
             if tag == self.app_data.selected_entry_data['name']:
                 continue
             self.tag_listbox.insert(tk.END, tag)
-
 
     def on_frame_configure(self, event):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
