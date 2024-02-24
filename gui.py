@@ -411,8 +411,8 @@ class WorldOverviewFrame(tk.Frame):
                 # Configure the packing of the canvas within its container widget
                 canvas.pack_configure(side="left", fill="both", expand=True, padx=(0, scrollbar.winfo_width()))
 
-                # Update the listboxes within the frame
-                self.update_listboxes()
+        # Update the listboxes within the frame
+        self.update_listboxes()
 
     def update_listboxes(self):
         """
@@ -786,7 +786,7 @@ class ViewEntryFrame(tk.Frame):
             back_button.pack(pady=10)
 
         # Insert data if exists
-        self.insert_data_if_exists()
+        self.insert_data()
     
     def go_back(self):
         """
@@ -801,19 +801,30 @@ class ViewEntryFrame(tk.Frame):
         # Show WorldOverviewFrame
         self.controller.show_frame(WorldOverviewFrame)
 
-    def insert_data_if_exists(self):
+    def insert_data(self):
+        """
+            Inputs the data from selected_entry_data into widgets
+
+
+        """
+
+        # Guarded statement to ensure the existence of data
         if not self.app_data.selected_entry_data:
             return
     
+        # Save previous data to allow for frame reversal when closing the TopLevel window
         if not self.app_data.previous_entry_data:
             self.app_data.previous_entry_data = self.app_data.selected_entry_data
 
+        # Iterate through label_widgets and insert text
         for table, textbox in self.text_widgets.items():
             textbox.configure(text=self.app_data.selected_entry_data[table])
 
+        # Inputs the name into the name label
         self.name_text.configure(text=self.app_data.selected_entry_data['name'])
 
-        if self.app_data.selected_entry_data['image_data'] != None:
+
+        if self.app_data.selected_entry_data['image_data']:
             self.image_data = self.app_data.selected_entry_data['image_data']
             self.display_image(self.image_data)
 
