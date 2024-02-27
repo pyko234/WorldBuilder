@@ -968,7 +968,8 @@ class ViewEntryFrame(tk.Frame):
         selected_option = self.tag_filter_combobox.get().replace(' ', '_').lower()
 
         # Retrieve tag list from selected data and stript any unwanted spaces
-        tag_list = self.app_data.selected_entry_data['tags'].split(',').strip()
+        tag_list = self.app_data.selected_entry_data['tags'].split(',')
+        tag_list = [tag.strip() for tag in tag_list]
 
         # Filter the tags using the backend logic filtering function
         filtered_tags = backend_logic.filter_tag_list_by_table(self.app_data.session, self.app_data.url, tag_list, selected_option)
@@ -1049,7 +1050,32 @@ class ViewEntryFrame(tk.Frame):
 
 
 class EditEntryFrame(tk.Frame):
+    """
+    A frame for editing and adding new entries.
+
+    Args:
+        parent (tk.Tk or tk.Toplevel): The parent widget.
+        controller (tk.Tk): The main application controller.
+        app_data: An object containing application data.
+
+    This frame provides functionality for editing existing entries or adding new ones. It includes fields for entering
+    data, selecting tags, adding images, and saving or deleting entries.
+    """
+
     def __init__(self, parent, controller, app_data):
+        """
+        Initializes the EditEntryFrame.
+
+        Args:
+            parent (tk.Tk or tk.Toplevel): The parent widget.
+            controller (tk.Tk): The main application controller.
+            app_data: An object containing application data.
+
+        This method sets up the user interface for editing or adding new entries, including text fields, canvas for
+        scrolling, image display, tag selection, and buttons for saving or deleting entries.
+        """
+
+        # Create frame and save args as properties of frame
         tk.Frame.__init__(self, parent)
         self.parent = parent
         self.controller = controller
@@ -1057,82 +1083,116 @@ class EditEntryFrame(tk.Frame):
         self.text_widgets = {}
         self.image_data = None
 
+        # If no selected_world end method
         if not self.app_data.selected_world:
             return
 
+        # Retrieve column names using the backend logic
         self.column_names = backend_logic.get_column_names(self.app_data.session, self.app_data.selected_category)
 
+        # Top label
         top_label = tk.Label(self, text=f"New {self.app_data.selected_category.title()} Entry:")
         top_label.pack(pady=5)
 
+        # Name label
         name_label = tk.Label(self, text="Name")
         name_label.pack(pady=5)
 
+        # Name text
         self.name_text = tk.Entry(self)
         self.name_text.pack(pady=5)
 
+        # Canvas frame
         canvas_frame = tk.Frame(self)
         canvas_frame.pack(pady=5, fill='both', expand=True)
 
+        # Canvas to allow scrolling
         self.canvas = tk.Canvas(canvas_frame)
         self.canvas.pack(side='left', fill='both', expand=True)
 
+        # Scrollbar
         self.scrollbar = tk.Scrollbar(canvas_frame, orient='vertical', command=self.canvas.yview)
         self.scrollbar.pack(side='right', fill='y')
 
+        # Configure canvas to y-scroll
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
+        # Create inner_frame and place it on the canvas
         self.inner_frame = tk.Frame(self.canvas)
         self.canvas.create_window((0, 0), window=self.inner_frame, anchor='nw')
 
+        # Store the creation of the window as a variable for later calls
         self.inner_frame_id = self.canvas.create_window(0, 0, window=self.inner_frame, anchor='nw')
 
+        # Bind the creatino of the inner_frame to on_frame_configure
         self.inner_frame.bind("<Configure>", self.on_frame_configure)
+
+        # Bind the creation of the canvas to on_canvas_creation
         self.canvas.bind("<Configure>", self.on_canvas_configure)
 
+        # Finally, configure the scrollbar to the canvas and the mouse wheel to scroll
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
         self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
 
-        for i in self.column_names[1:-1]:
-            if i == "tags":
+        # Iterate through column_names
+        for column_name in self.column_names:
+
+            # if column name in list, skip iteration
+            if column_name in ["tags", "name", "image_data"]:
                 continue
 
-            label = tk.Label(self.inner_frame, text=i.capitalize())
+            # Column name label
+            label = tk.Label(self.inner_frame, text=column_name.title())
             label.pack(pady=5)
 
+            # Text frame label
             text_frame = tk.Frame(self.inner_frame)
             text_frame.pack(pady=10)
 
+            # Scrollbar for text box
             scrollbar = tk.Scrollbar(text_frame)
             scrollbar.pack(side=tk.RIGHT, fill='y')
 
+            # Textbox
             text = tk.Text(text_frame, wrap='word', yscrollcommand=scrollbar.set, height=10)
             text.pack(side=tk.LEFT)
 
-            self.text_widgets[i] = text
+            # Store the textbox in a dictionary wth the column_name being the key
+            self.text_widgets[column_name] = text
         
+        # Image label
         image_label = tk.Label(self.inner_frame, text="Photo")
         image_label.pack(pady=5)
 
+        # Label to show image
         self.image = tk.Label(self.inner_frame)
         self.image.pack(pady=5)
 
+        # Bind the double click of the image to view_original_image
         self.image.bind('<Double-1>', self.view_original_image)
 
+        # Select image button
         select_image_btn = tk.Button(self.inner_frame, text="Select Image", command=self.select_image)
         select_image_btn.pack(pady=5)
 
+        # Tag label
         tag_label = tk.Label(self.inner_frame, text='Tags')
         tag_label.pack(pady=5)
 
-        if self.app_data.selected_entry_data:
-            tags = backend_logic.get_all_tags(self.app_data.session, self.app_data.url)
+        # Retrieve all tags from tag table
+        tags = backend_logic.get_all_tags(self.app_data.session, self.app_data.url)
 
+        # if we are editing an existing entry
+        if self.app_data.selected_entry_data:          
+
+            # If name in tags
             if self.app_data.selected_entry_data['name'] in tags:
+
+                # Remove name in tags
                 tags.remove(self.app_data.selected_entry_data['name'])
-        
-        else:
-            tags = backend_logic.get_all_tags(self.app_data.session, self.app_data.url)
+
+                # Get current tags from selected data
+                current_tags = self.app_data.selected_entry_data['tags'].split(',')
 
         # Combobox for tags
         self.tag_combobox = ttk.Combobox(self.inner_frame, values=tags, state='readonly')
