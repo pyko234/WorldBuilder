@@ -758,6 +758,9 @@ class ViewEntryFrame(tk.Frame):
 
         # Bind the doubleclick on the image to view_original_image method
         self.image.bind('<Double-1>', self.view_original_image)
+
+        # Tag Listbox
+        self.tag_listbox = tk.Listbox(self.inner_frame, selectmode=tk.MULTIPLE)
         
         # Check if parent is main window or TopLevel window
         if not isinstance(self.parent, tk.Toplevel):
@@ -769,8 +772,7 @@ class ViewEntryFrame(tk.Frame):
             # Create list of options for filtering tags
             filter_options = ['All Categories'] + [x.replace('_', ' ').title() for x in self.app_data.table_names if x != 'tags']
 
-            # Tag Listbox
-            self.tag_listbox = tk.Listbox(self.inner_frame, selectmode=tk.MULTIPLE)
+            # Grid the tag listbox only if not Top Level Window
             self.tag_listbox.grid(row=current_row + 5, column=1, sticky="w", padx=5, pady=5)
 
             # Combobox to hold the filter options, bound to update_tag_listbox on selection
@@ -794,6 +796,7 @@ class ViewEntryFrame(tk.Frame):
 
             Clears selected entry data and switches the frame back the WorldOverviewFrame
         """
+
         # Empty both selected_entry_data and previous_entry_data for logic
         self.app_data.selected_entry_data = None
         self.app_data.previous_entry_data = None
@@ -803,9 +806,11 @@ class ViewEntryFrame(tk.Frame):
 
     def insert_data(self):
         """
-            Inputs the data from selected_entry_data into widgets
+        Inserts data into text widgets.
 
-
+        If there is data for the selected entry (which there should be in View mode), this method inserts
+        it into the relating text widget. Note the text widgets are actually labels in read only mode but
+        the name text was kept to avoid confusion with the label tha describes the data.
         """
 
         # Guarded statement to ensure the existence of data
@@ -823,7 +828,7 @@ class ViewEntryFrame(tk.Frame):
         # Inputs the name into the name label
         self.name_text.configure(text=self.app_data.selected_entry_data['name'])
 
-
+        # Inputs image data if it exists
         if self.app_data.selected_entry_data['image_data']:
             self.image_data = self.app_data.selected_entry_data['image_data']
             self.display_image(self.image_data)
@@ -831,39 +836,98 @@ class ViewEntryFrame(tk.Frame):
         # Clear the Listbox
         self.tag_listbox.delete(0, tk.END)
 
-        # Populate the Listbox with existing tags
+        # Get list of tags
         existing_tags = self.app_data.selected_entry_data['tags'].split(', ')
 
+        # Iterate through existing tags
         for tag in existing_tags:
+
+            # Ignore iteration if tag is own name (to avoid an entry being tagged with itself)
             if tag == self.app_data.selected_entry_data['name']:
                 continue
+
+            # Insert current tag into list box
             self.tag_listbox.insert(tk.END, tag)
 
     def on_frame_configure(self, event):
+        """
+        Handles the canvas frame configuration change event.
+
+        Adjusts the scroll region of the canvas to accommodate changes in the inner frame's size.
+        """
+
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def on_canvas_configure(self, event):
+        """
+        Adjusts the inner frame's width in response to canvas configuration changes.
+
+        Args:
+            event (tk.Event): The event object triggered by canvas configuration changes.
+
+        This method is bound to the <Configure> event of the canvas widget. It adjusts the width of the inner frame
+        (self.inner_frame) within the canvas to match the canvas's width, ensuring that the inner frame fills the
+        available space horizontally.
+        """
+
         self.canvas.itemconfig(self.inner_frame_id, width=event.width)
 
     def on_mouse_wheel(self, event, canvas):
-        # Adjust the view of the canvas when the mouse wheel is scrolled
+        """
+        Adjusts the view of the canvas when the mouse wheel is scrolled.
+
+        Args:
+            event (tk.Event): The event object representing the mouse wheel scroll event.
+            canvas (tk.Canvas): The canvas widget to which the scrolling applies.
+
+        This method is bound to the <MouseWheel> event. It scrolls the canvas vertically in response to mouse wheel
+        movement, allowing users to navigate through content that exceeds the visible area of the canvas.
+        """
+
         canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
     def display_image(self, image_data):
+        """
+        Displays an image within the ViewEntryFrame.
+
+        Args:
+            image_data (bytes): The raw image data to be displayed.
+
+        This method opens the provided image using the Python Imaging Library (PIL), resizes it to fit the GUI if
+        necessary, converts it to the Tkinter PhotoImage format, and displays it in a label widget (self.image) within
+        the ViewEntryFrame.
+        """
+
         # Open the image using PIL
         image = Image.open(io.BytesIO(image_data))
-        # Resize the image if necessary to fit in the GUI
-        # Use Image.Resampling.LANCZOS for high-quality downsampling
+
+        # Resample using Image.Resampling.LANCZOS for high-quality downsampling
         image = image.resize((200, 200), Image.Resampling.LANCZOS)
+
         # Convert the image to Tkinter PhotoImage format
         photo = ImageTk.PhotoImage(image)
+
         # Display the image in a label
         self.image.configure(image=photo)
-        self.image.image = photo  # Keep a reference to avoid garbage collection
+
+        # Keep a reference to avoid garbage collection
+        self.image.image = photo
 
     def view_original_image(self, event):
+        """
+        Displays the original image in a new window when the image label is double-clicked.
+
+        Args:
+            event (tk.Event): The event object representing the double-click event.
+
+        If image data exists (self.image_data), this method opens the original image using the Python Imaging Library
+        (PIL) and displays it in a new Toplevel window titled "Original Image". If no image data exists, it shows an
+        information messagebox indicating that no image data is available.
+        """
+
         # Check if the image data exists
         if hasattr(self, 'image_data'):
+
             # Open the original image using PIL
             original_image = Image.open(io.BytesIO(self.image_data))
 
@@ -879,27 +943,56 @@ class ViewEntryFrame(tk.Frame):
 
             # Display the original image in the label
             original_image_label.configure(image=original_photo)
-            original_image_label.image = original_photo  # Keep a reference to avoid garbage collection
             original_image_label.pack()
 
+            # Keep a reference to avoid garbage collection
+            original_image_label.image = original_photo
+
         else:
+
             # If image data does not exist, show a message
             messagebox.showinfo("No Image", "No image data available.")
 
     def update_tag_listbox(self, event):
+        """
+        Updates the tag listbox based on the selected category in the tag filter combobox.
+
+        Args:
+            event (tk.Event): The event object representing the selection change event in the tag filter combobox.
+
+        This method updates the tag listbox (self.tag_listbox) with tags filtered based on the selected category in the
+        tag filter combobox (self.tag_filter_combobox).
+        """
+
+        # Retrieve the selected option from the tag filter combobox
         selected_option = self.tag_filter_combobox.get().replace(' ', '_').lower()
 
-        tag_list = self.app_data.selected_entry_data['tags'].split(',')
-        tag_list = [x.strip() for x in tag_list]
+        # Retrieve tag list from selected data and stript any unwanted spaces
+        tag_list = self.app_data.selected_entry_data['tags'].split(',').strip()
 
+        # Filter the tags using the backend logic filtering function
         filtered_tags = backend_logic.filter_tag_list_by_table(self.app_data.session, self.app_data.url, tag_list, selected_option)
         
+        # Delete all tags in listbox
         self.tag_listbox.delete(0, tk.END)
         
+        # Iterate through the filtered tags
         for tag in filtered_tags:
+
+            # Insert the current tag
             self.tag_listbox.insert(tk.END, tag)
 
     def on_tag_double_click(self, event):
+        """
+        Handles double-click events on tags in the tag listbox.
+
+        Args:
+            event (tk.Event): The event object representing the double-click event.
+
+        This method retrieves information about the selected tag, such as entry data and category, and displays it in a
+        new Toplevel window using ViewEntryFrame.
+        """
+
         # Get the selected tag from the tag_listbox
         selected_index = self.tag_listbox.curselection()
         selected_tag = self.tag_listbox.get(self.tag_listbox.curselection())
@@ -908,7 +1001,7 @@ class ViewEntryFrame(tk.Frame):
         self.app_data.selected_entry_data = backend_logic.get_data_for_entry(self.app_data.session, selected_tag, self.app_data.url)
         self.app_data.selected_category = backend_logic.get_tag_location(self.app_data.session, selected_tag, self.app_data.url)
 
-        # Create a new Toplevel window
+        # Create a new Toplevel window and configure size and closing
         new_window = tk.Toplevel(self.parent)
         new_window.geometry("700x600")
         new_window.protocol("WM_DELETE_WINDOW", lambda: self.on_window_close(new_window))
@@ -923,16 +1016,35 @@ class ViewEntryFrame(tk.Frame):
         self.tag_listbox.selection_clear(selected_index)
 
     def on_window_close(self, window):
+        """
+        Handles the closing of the Toplevel window and resets the state of the application.
+
+        Args:
+            window (tk.Toplevel): The Toplevel window to be closed.
+
+        This method unbinds mouse wheel events from the canvas, destroys the provided window, and resets the application
+        state to the previously selected entry data and category.
+        """
+
+        # Unbind the mousewheel from the canvas on the toplevel window
         self.canvas.unbind_all("<MouseWheel>")
+
         # Destroy the window
         window.destroy()
 
+        # Retrieve the previous data as the selected data
         self.app_data.selected_entry_data = self.app_data.previous_entry_data
+
+        # Set the previous data to None
         self.app_data.previous_entry_data = None
+
+        # Update the selected category with the selected entry data
         self.app_data.selected_category = backend_logic.get_tag_location(self.app_data.session, self.app_data.selected_entry_data['name'], self.app_data.url)
 
+        # Instantiate new ViewEntryFrame with the selected entry data
         new_frame = ViewEntryFrame(self.parent, self.controller, self.app_data)
 
+        # Show new instance of ViewEntryFrame
         self.controller.show_frame(new_frame)
 
 
