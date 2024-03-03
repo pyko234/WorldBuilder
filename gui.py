@@ -1233,20 +1233,41 @@ class EditEntryFrame(tk.Frame):
         self.insert_data_if_exists()
 
     def go_back(self):
+        """
+        Returns to the previous frame (WorldOverviewFrame).
+
+        This method resets the selected entry data and category, then shows the WorldOverviewFrame.
+        """
+
+        # Empty the selected entry data and previous entry data in the data class
         self.app_data.selected_entry_data = None
         self.app_data.previous_entry_data = None
+
+        # Go back a frame
         self.controller.show_frame(WorldOverviewFrame)
 
     def save(self):
+        """
+        Saves the edited or new entry.
+
+        This method gathers data from the input fields, tags, and image, then saves the entry using backend logic. After
+        saving, it navigates back to the WorldOverviewFrame.
+        """
+
+        # Instantiate an empty dictionary to generate the data to save
         data_to_write = {}
 
+        # Insert name in dictionary
         data_to_write['name'] = self.name_text.get()
 
-        for column_name in self.column_names[1:-1]:
+        # Iterate through column_names
+        for column_name in self.column_names:
             
-            if column_name == 'tags':
+            # Skip iteration if column name in list
+            if column_name in ['tags', 'name', 'image_data']:
                 continue
 
+            # Save data from named text widget and save in dictionary
             data_to_write[column_name] = self.text_widgets[column_name].get("1.0", tk.END).strip()
 
         # Get selected tags from the Listbox
@@ -1255,56 +1276,128 @@ class EditEntryFrame(tk.Frame):
         # Convert the list of tags to a comma-separated string
         data_to_write['tags'] = ', '.join(selected_tags)
 
+        # Check for image_data
         if self.image_data:
+
             # Include the image data in the data_to_write dictionary
             data_to_write['image_data'] = self.image_data
 
+        # Save dictionary in database using backend logic
         backend_logic.add_data_to_table(self.app_data.session, self.app_data.selected_category, data_to_write, self.app_data.url)
+        
+        # Show WorldOverviewFrame
         self.controller.show_frame(WorldOverviewFrame)
 
     def delete_entry(self):
+        """
+        Deletes the selected entry.
+
+        This method removes the selected entry using backend logic and navigates back to the WorldOverviewFrame.
+        """
+
+        # Get name of entry to remove
         data_to_remove = self.name_text.get()
 
+        # Remove entry using backend logic
         backend_logic.remove_entry(self.app_data.session, self.app_data.selected_category, data_to_remove, self.app_data.url)
 
+        # Show WorldOverviewFrame
         self.controller.show_frame(WorldOverviewFrame)
 
     def insert_data_if_exists(self):
+        """
+        Inserts existing data into the entry fields if editing an existing entry.
+
+        If an existing entry is being edited, this method populates the text fields, image display, and tag listbox with
+        existing data.
+        """
+
+        # Check for selected entry data, if None exit method
         if not self.app_data.selected_entry_data:
             return
         
+        # Check for previous entry data
         if not self.app_data.previous_entry_data:
+
+            # Set selected entry data to previous entry data
             self.app_data.previous_entry_data = self.app_data.selected_entry_data
 
+        # Iterate through text_boxes in self.text_widgets, unpacking them into table and textbox
         for table, textbox in self.text_widgets.items():
+
+            # Insert data into textbox
             textbox.insert(tk.END, self.app_data.selected_entry_data[table])
 
+        # Insert name into name_text
         self.name_text.insert(tk.END, self.app_data.selected_entry_data['name'])
 
-        if self.app_data.selected_entry_data['image_data'] != None:
+        # Check for image data
+        if self.app_data.selected_entry_data['image_data']:
+            
+            # Store image data as an attribute of the class to avoid garbage collection
             self.image_data = self.app_data.selected_entry_data['image_data']
+
+            # Display image using method
             self.display_image(self.image_data)
 
         # Clear the Listbox
         self.tag_listbox.delete(0, tk.END)
 
-        # Populate the Listbox with existing tags
+        # Get list of tags
         existing_tags = self.app_data.selected_entry_data['tags'].split(', ')
+        
+        # Iterate through existing tags
         for tag in existing_tags:
+
+            # Skip if tag is own name
             if tag == self.app_data.selected_entry_data['name']:
                 continue
+
+            # Insert tag into listbox
             self.tag_listbox.insert(tk.END, tag)
 
     def add_tag(self, event):
+        """
+        Adds a tag to the entry.
+
+        Args:
+            event (tk.Event): The event object representing the return key press event in the tag combobox.
+
+        This method adds a tag from the combobox to the tag listbox when the return key is pressed.
+        """
+
+        # Get selected tag
         selected_tag = self.tag_combobox.get()
+        
+        # If tag listbox size is 1 and the first entry is blank
         if self.tag_listbox.size() == 1 and self.tag_listbox.get(0) == '':
+            
+            # Delete the empty tag
             self.tag_listbox.delete(0)
+
+            # Insert selected tag
             self.tag_listbox.insert(0, selected_tag)
+        
+        # Else if selected_tag is not none and is not in tag_listbox
         elif selected_tag and selected_tag not in self.tag_listbox.get(0, tk.END):
+            
+            # Insert selected tag at the end of the list_box
             self.tag_listbox.insert(tk.END, selected_tag)
-            self.tag_combobox.set("")  # Clear the combobox after adding the tag
+            
+            # Clear the combobox after adding the tag
+            self.tag_combobox.set("")
 
     def on_tag_double_click(self, event):
+        """
+        Opens a selected tag for editing.
+
+        Args:
+            event (tk.Event): The event object representing the double-click event on a tag in the tag listbox.
+
+        This method retrieves information about the selected tag and opens it for editing in a new EditEntryFrame
+        window.
+        """
+
         # Get the selected tag from the tag_listbox
         selected_index = self.tag_listbox.curselection()
         selected_tag = self.tag_listbox.get(self.tag_listbox.curselection())
@@ -1328,40 +1421,100 @@ class EditEntryFrame(tk.Frame):
         self.tag_listbox.selection_clear(selected_index)
 
     def on_frame_configure(self, event):
+        """
+        Configures the canvas frame.
+
+        Args:
+            event (tk.Event): The event object representing the configuration change event in the canvas.
+
+        This method adjusts the canvas frame to fit the canvas contents.
+        """
+        # Configure the scrollregion to be the canvas bbox
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def on_canvas_configure(self, event):
+        """
+        Configures the canvas.
+
+        Args:
+            event (tk.Event): The event object representing the configuration change event in the canvas.
+
+        This method adjusts the canvas width in response to configuration changes.
+        """
         self.canvas.itemconfig(self.inner_frame_id, width=event.width)
 
     def on_mouse_wheel(self, event):
+        """
+        Scrolls the canvas with the mouse wheel.
+
+        Args:
+            event (tk.Event): The event object representing the mouse wheel scroll event.
+
+        This method scrolls the canvas vertically in response to mouse wheel movement.
+        """
+
         # Adjust the view of the canvas when the mouse wheel is scrolled
         self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
     def select_image(self):
+        """
+        Opens a file dialog to select an image.
+
+        This method opens a file dialog to select an image file and displays the selected image.
+        """
+
         # Open a file dialog to select an image file
         file_path = filedialog.askopenfilename()
+
+        # If there is a file_path
         if file_path:
+
             # Read the image file and convert it to bytes
             with open(file_path, 'rb') as file:
                self.image_data = file.read()
+            
             # Display the selected image
             self.display_image(self.image_data)
 
     def display_image(self, image_data):
+        """
+        Displays an image.
+
+        Args:
+            image_data (bytes): The raw image data.
+
+        This method displays the selected image within the EditEntryFrame.
+        """
+
         # Open the image using PIL
         image = Image.open(io.BytesIO(image_data))
+        
         # Resize the image if necessary to fit in the GUI
         # Use Image.Resampling.LANCZOS for high-quality downsampling
         image = image.resize((200, 200), Image.Resampling.LANCZOS)
+        
         # Convert the image to Tkinter PhotoImage format
         photo = ImageTk.PhotoImage(image)
+        
         # Display the image in a label
         self.image.configure(image=photo)
-        self.image.image = photo  # Keep a reference to avoid garbage collection
+
+        # Keep a reference to avoid garbage collection
+        self.image.image = photo  
 
     def view_original_image(self, event):
+        """
+        Displays the original image.
+
+        Args:
+            event (tk.Event): The event object representing the double-click event on the image label.
+
+        This method displays the original image in a new window when the image label is double-clicked.
+        """
+
         # Check if the image data exists
         if hasattr(self, 'image_data'):
+
             # Open the original image using PIL
             original_image = Image.open(io.BytesIO(self.image_data))
 
@@ -1380,34 +1533,71 @@ class EditEntryFrame(tk.Frame):
             original_image_label.image = original_photo  # Keep a reference to avoid garbage collection
             original_image_label.pack()
 
+        # If no image_data
         else:
+
             # If image data does not exist, show a message
             messagebox.showinfo("No Image", "No image data available.")
 
     def update_tag_listbox(self, event):
+        """
+        Updates the tag listbox based on the selected category.
+
+        Args:
+            event (tk.Event): The event object representing the selection change event in the tag filter combobox.
+
+        This method updates the tag listbox based on the selected category in the tag filter combobox.
+        """
+
+        # Get selected filter option
         selected_option = self.tag_filter_combobox.get().replace(' ', '_').lower()
 
+        # Get the entire tag list and strip the excess whitespace from rach item in the list
         tag_list = self.app_data.selected_entry_data['tags'].split(',')
         tag_list = [x.strip() for x in tag_list]
 
+        # Get list of filtered tags using backend logic
         filtered_tags = backend_logic.filter_tag_list_by_table(self.app_data.session, self.app_data.url, tag_list, selected_option)
         
+        # Delete all entries in the listbox
         self.tag_listbox.delete(0, tk.END)
         
+        # Iterate through tags
         for tag in filtered_tags:
+
+            # Insert tag into listbox
             self.tag_listbox.insert(tk.END, tag)
 
     def on_window_close(self, window):
+        """
+        Handles the closing of the Toplevel window.
+
+        Args:
+            window (tk.Toplevel): The Toplevel window to be closed.
+
+        This method unbinds mouse wheel events from the canvas, destroys the provided window, and resets the application
+        state to the previously selected entry data and category.
+        """
+
+        # Unbind the MouseWheel event
         self.canvas.unbind_all("<MouseWheel>")
+        
         # Destroy the window
         window.destroy()
 
+        # Set previous entry data to selected entry data
         self.app_data.selected_entry_data = self.app_data.previous_entry_data
+        
+        # Set None to previous entry data
         self.app_data.previous_entry_data = None
+        
+        # Reset the selected category
         self.app_data.selected_category = backend_logic.get_tag_location(self.app_data.session, self.app_data.selected_entry_data['name'], self.app_data.url)
 
+        # Instantiate new EditEntryFrame
         new_frame = EditEntryFrame(self.parent, self.controller, self.app_data)
 
+        # Show new frame
         self.controller.show_frame(new_frame)    
 
 
