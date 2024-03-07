@@ -1,7 +1,7 @@
 import os
 import io
 import tkinter as tk
-import backend_logic as backend_logic
+import backend_logic
 from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
 from database_schema import WorldBuilder
@@ -340,76 +340,60 @@ class WorldOverviewFrame(tk.Frame):
             None
         """
 
-        # If not session exists, end the method
         if not self.app_data.session:
             return
-        
-        # Store table names from the current session
+
         table_names = backend_logic.get_table_names(self.app_data.session)
         self.app_data.table_names = table_names
-    
-        # Define the number of columns in the layout
+
         num_columns = 3
 
         # Canvas widget to allow scrolling
         canvas_frame = tk.Frame(self)
         canvas_frame.pack(fill="both", expand=True)
-        canvas = tk.Canvas(canvas_frame)
-        canvas.pack(side="left", fill="both", expand=True, padx=5)
 
-        # Scroll bar widget packed to the right
-        scrollbar = tk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
-        scrollbar.pack(side="right", fill="y")
+        self.canvas = tk.Canvas(canvas_frame)
+        self.canvas.pack(side="left", fill="both", expand=True, padx=5)
 
         # Create frame to hold frames created below and create the scrollable window
-        category_frames = tk.Frame(canvas)
-        canvas.create_window((0, 0), window=category_frames, anchor="nw")
+        category_frames = tk.Frame(self.canvas)
+
+        # Scroll bar widget packed to the right
+        scrollbar = tk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
+        scrollbar.pack(side="right", fill="y")
+
+        # Configure the scrollbar and canvas
+        self.canvas.config(yscrollcommand=scrollbar.set)
+
+        # Bind events
+        category_frames.bind("<Configure>", lambda event, canvas=self.canvas: self.on_canvas_configure(canvas))
+        self.canvas.bind('<Configure>', self.on_canvas_resize)
+        self.canvas.bind_all('<Button-4>', lambda event: self._on_mousewheel(event))
+        self.canvas.bind_all('<Button-5>', lambda event: self._on_mousewheel(event))
+
+        # Create the window within the canvas    
+        self.canvas_window = self.canvas.create_window((0, 0), window=category_frames, anchor="nw")
 
         # Create listbox dictionary to hold the entry listboxes
         self.listbox_dict = {}
 
-        # Iterate through 0 to the length of the table names stepping the number of columns
         for i in range(0, len(table_names), num_columns):
-
-            # Create category frame to hold the frames generated below
             category_frame = tk.Frame(category_frames)
             category_frame.pack(fill='both', side=tk.TOP, pady=10)
 
-            # Iterate through i to lowest of i + number of columns of the total length of table names
             for x in range(i, min(i + num_columns, len(table_names))):
-
-                # Create the overall frame for the label and listbox for entries in a horizontal line
                 individual_frame = tk.Frame(category_frame)
-                individual_frame.pack(side=tk.LEFT)
+                individual_frame.pack(side=tk.LEFT, fill='both', expand=True)  # Adjusted packing
 
-                # Category label
                 label = tk.Label(individual_frame, text=table_names[x].replace('_', ' ').title())
                 label.pack(side=tk.TOP)
 
-                # Category listbox
                 listbox = tk.Listbox(individual_frame, height=10)
-                listbox.pack(side=tk.TOP, padx=10, fill='both', expand=True)
+                listbox.pack(side=tk.TOP, padx=10, fill='both', expand=True)  # Adjusted packing
 
-                # Bind the listbox doubleclick to the on_double_click method
                 listbox.bind('<Double-1>', lambda event, table_name=table_names[x]: self.on_double_click(event, table_name))
 
-                # Save the listbox and name in dictionary
                 self.listbox_dict[table_names[x]] = listbox
-
-                # Configure the canvas to update the vertical scrollbar
-                canvas.configure(yscrollcommand=scrollbar.set)
-
-                # Bind the MouseWheel event to scroll the canvas vertically
-                canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1 * (event.delta / 120)), "units"))
-
-                # Update the canvas tasks while the program is idle
-                canvas.update_idletasks()
-
-                # Configure the canvas to fit the bounding box of all elements
-                canvas.config(scrollregion=canvas.bbox("all"))
-
-                # Configure the packing of the canvas within its container widget
-                canvas.pack_configure(side="left", fill="both", expand=True, padx=(0, scrollbar.winfo_width()))
 
         # Update the listboxes within the frame
         self.update_listboxes()
@@ -549,6 +533,29 @@ class WorldOverviewFrame(tk.Frame):
         # Display photo in map window 
         label = tk.Label(map_window, image=self.map_photo)
         label.pack()
+
+    def frame_width(self, event):
+        canvas_width = event.width
+        self.canvas.itemconfig(self.canvas_window, width=canvas_width)
+
+    def on_frame_configure(self, event):
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def on_canvas_configure(self, canvas):
+        """
+        Adjusts the scroll region of the canvas when the size of the canvas window changes.
+        """
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    def on_canvas_resize(self, event):
+        """
+        Adjusts the size of the canvas window when the size of the canvas changes.
+        """
+        self.canvas.itemconfig(self.canvas_window, width=event.width)
+
+    def _on_mousewheel(self, event):
+        print("Scrolling")
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
 
 class NewEntrySelectCategoryFrame(tk.Frame):
@@ -1623,6 +1630,9 @@ class WorldBuilderApp(tk.Tk):
         # Set the title for the window
         self.title("World Builder App")
 
+        # Set size of window
+        self.geometry("700x600")
+
         # Instantiate the app data class
         self.app_data = AppData()
 
@@ -1721,18 +1731,7 @@ class WorldBuilderApp(tk.Tk):
         # If the frame has the update_label_text method
         if hasattr(frame, "update_label_text"):
             frame.update_label_text()
-
-        # Resize the window to match the frame size with padding
-        self.update_idletasks()
-        width = frame.winfo_reqwidth() + 40  # Add padding on both sides
-        height = frame.winfo_reqheight() + 40  # Add padding on both sides
-        x = (self.winfo_screenwidth() - frame.winfo_reqwidth()) // 2
-        y = (self.winfo_screenheight() - frame.winfo_reqheight()) // 2
-        self.geometry(f"{width}x{height}+{x}+{y}")
-
-        # If the frame is an instance of EditEntryFrame, set the main window to specific value
-        if isinstance(frame, EditEntryFrame) or isinstance(frame, ViewEntryFrame):
-            self.geometry("700x600")
+       
 
 
 if __name__ == "__main__":
