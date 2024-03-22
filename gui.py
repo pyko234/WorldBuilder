@@ -2,6 +2,7 @@ import os
 import io
 import tkinter as tk
 import backend_logic
+import sys
 from tkinter import ttk, messagebox, filedialog
 from pathlib import Path
 from database_schema import WorldBuilder
@@ -42,6 +43,51 @@ class AppData:
         self.session = None
         self.url = None
         self.edit = None
+
+
+class ScrollEventHandler:
+    """
+        Handle scrollevents in a way that works cross-platform
+    """
+    @staticmethod
+    def handle_scroll_event(event):
+        """
+        Handle scroll events for the canvas widget.
+        """
+        move = 0
+        if sys.platform.startswith("linux"):
+            # Linux platform
+            if event.num == 4:
+                move = -1
+            elif event.num == 5:
+                move = 1
+        else:
+            # Windows platform
+            move = int(-1 * (event.delta / 120))
+
+        # Identify the widget under the cursor
+        widget = event.widget.winfo_containing(event.x_root, event.y_root)
+
+        # Iterate through widget parents to find first instance of widget with 'yview_scroll'
+        while widget is not None:
+            if hasattr(widget, 'yview_scroll'):
+                try:
+                    widget.yview_scroll(move, "units")
+                    break
+                except Exception:
+                    pass
+            widget = widget.master
+
+    @staticmethod
+    def bind_scroll_event(parent_window):
+        """
+        Bind scroll events to the parent window.
+        """
+        if sys.platform.startswith("linux"):
+            parent_window.bind("<Button-4>", ScrollEventHandler.handle_scroll_event)
+            parent_window.bind("<Button-5>", ScrollEventHandler.handle_scroll_event)
+        else:
+            parent_window.bind("<MouseWheel>", ScrollEventHandler.handle_scroll_event)
 
 
 class WorldSelectionFrame(tk.Frame):
@@ -240,32 +286,7 @@ class WorldSelectionFrame(tk.Frame):
 
 class WorldOverviewFrame(tk.Frame):
     """
-    Represents a frame for providing an overview of a selected world, including entry categories and entries.
-
-    Args:
-        parent (tk.Widget): The parent widget to which this frame belongs.
-        controller (tk.Widget): The controller responsible for managing the application flow.
-        app_data (AppData): An instance of the AppData class containing application-wide data.
-
-    Attributes:
-        controller (tk.Widget): The controller widget responsible for managing application flow.
-        app_data (AppData): An instance of the AppData class containing application-wide data.
-        label_text_var (tk.StringVar): Variable to hold the text for displaying the selected world name.
-        listbox_dict (dict): A dictionary mapping category names to their respective listbox widgets.
-
-    Methods:
-        create_dynamic_category_widgets(): Creates dynamic category widgets based on available tables in the database.
-        update_label_text(): Updates the label text to display the selected world name.
-        update_listboxes(): Updates the listboxes with entry names for each category.
-        on_double_click(event, table_name): Handles double-click events on listbox items to view or edit entry details.
-        select_map(): Opens a file dialog to select an image file for the world map.
-        save_image(image_data): Saves the selected image data as the world map in the database.
-        view_map(): Retrieves and displays the world map from the database in a new window.
-    """
-
-    def __init__(self, parent, controller, app_data):
-        """
-        Initializes the WorldOverviewFrame instance.
+        Represents a frame for providing an overview of a selected world, including entry categories and entries.
 
         Args:
             parent (tk.Widget): The parent widget to which this frame belongs.
@@ -273,15 +294,40 @@ class WorldOverviewFrame(tk.Frame):
             app_data (AppData): An instance of the AppData class containing application-wide data.
 
         Attributes:
-            parent (tk.Widget): The parent widget to which this frame belongs.
-            controller (tk.Widget): The controller responsible for managing the application flow.
+            controller (tk.Widget): The controller widget responsible for managing application flow.
             app_data (AppData): An instance of the AppData class containing application-wide data.
             label_text_var (tk.StringVar): Variable to hold the text for displaying the selected world name.
+            listbox_dict (dict): A dictionary mapping category names to their respective listbox widgets.
 
-        Note:
-            This method sets up the GUI elements for displaying information about the selected world,
-            including buttons for selecting and viewing the world map, and options for navigating back
-            or creating a new entry.
+        Methods:
+            create_dynamic_category_widgets(): Creates dynamic category widgets based on available tables in the database.
+            update_label_text(): Updates the label text to display the selected world name.
+            update_listboxes(): Updates the listboxes with entry names for each category.
+            on_double_click(event, table_name): Handles double-click events on listbox items to view or edit entry details.
+            select_map(): Opens a file dialog to select an image file for the world map.
+            save_image(image_data): Saves the selected image data as the world map in the database.
+            view_map(): Retrieves and displays the world map from the database in a new window.
+    """
+
+    def __init__(self, parent, controller, app_data):
+        """
+            Initializes the WorldOverviewFrame instance.
+
+            Args:
+                parent (tk.Widget): The parent widget to which this frame belongs.
+                controller (tk.Widget): The controller responsible for managing the application flow.
+                app_data (AppData): An instance of the AppData class containing application-wide data.
+
+            Attributes:
+                parent (tk.Widget): The parent widget to which this frame belongs.
+                controller (tk.Widget): The controller responsible for managing the application flow.
+                app_data (AppData): An instance of the AppData class containing application-wide data.
+                label_text_var (tk.StringVar): Variable to hold the text for displaying the selected world name.
+
+            Note:
+                This method sets up the GUI elements for displaying information about the selected world,
+                including buttons for selecting and viewing the world map, and options for navigating back
+                or creating a new entry.
         """
 
         # Create the frame and pass attributes
@@ -327,17 +373,17 @@ class WorldOverviewFrame(tk.Frame):
 
     def create_dynamic_category_widgets(self):
         """
-        Dynamically creates widgets for displaying categories and entries.
+            Dynamically creates widgets for displaying categories and entries.
 
-        Retrieves table names from the application data session.
-        Constructs frames, labels, and listboxes for each category.
-        Binds double-click events on listboxes to handle entry selection.
+            Retrieves table names from the application data session.
+            Constructs frames, labels, and listboxes for each category.
+            Binds double-click events on listboxes to handle entry selection.
 
-        Note:
-            This method is called to populate the frame with dynamic widgets representing categories and entries.
+            Note:
+                This method is called to populate the frame with dynamic widgets representing categories and entries.
 
-        Returns:
-            None
+            Returns:
+                None
         """
 
         if not self.app_data.session:
@@ -368,8 +414,6 @@ class WorldOverviewFrame(tk.Frame):
         # Bind events
         category_frames.bind("<Configure>", lambda event, canvas=self.canvas: self.on_canvas_configure(canvas))
         self.canvas.bind('<Configure>', self.on_canvas_resize)
-        self.canvas.bind_all('<Button-4>', lambda event: self._on_mousewheel(event))
-        self.canvas.bind_all('<Button-5>', lambda event: self._on_mousewheel(event))
 
         # Create the window within the canvas    
         self.canvas_window = self.canvas.create_window((0, 0), window=category_frames, anchor="nw")
@@ -394,6 +438,7 @@ class WorldOverviewFrame(tk.Frame):
                 listbox.bind('<Double-1>', lambda event, table_name=table_names[x]: self.on_double_click(event, table_name))
 
                 self.listbox_dict[table_names[x]] = listbox
+    
 
         # Update the listboxes within the frame
         self.update_listboxes()
@@ -552,10 +597,6 @@ class WorldOverviewFrame(tk.Frame):
         Adjusts the size of the canvas window when the size of the canvas changes.
         """
         self.canvas.itemconfig(self.canvas_window, width=event.width)
-
-    def _on_mousewheel(self, event):
-        print("Scrolling")
-        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
 
 class NewEntrySelectCategoryFrame(tk.Frame):
@@ -728,9 +769,6 @@ class ViewEntryFrame(tk.Frame):
         # Configure the canvas yscrollcommand to the scroll bar
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
-        # Bind the mouse wheel event to on_mouse_wheel method
-        self.canvas.bind_all("<MouseWheel>", lambda event: self.on_mouse_wheel(event, self.canvas))
-
         # Store the starting row
         current_row = 0
 
@@ -879,20 +917,6 @@ class ViewEntryFrame(tk.Frame):
 
         self.canvas.itemconfig(self.inner_frame_id, width=event.width)
 
-    def on_mouse_wheel(self, event, canvas):
-        """
-        Adjusts the view of the canvas when the mouse wheel is scrolled.
-
-        Args:
-            event (tk.Event): The event object representing the mouse wheel scroll event.
-            canvas (tk.Canvas): The canvas widget to which the scrolling applies.
-
-        This method is bound to the <MouseWheel> event. It scrolls the canvas vertically in response to mouse wheel
-        movement, allowing users to navigate through content that exceeds the visible area of the canvas.
-        """
-
-        canvas.yview_scroll(-1 * (event.delta // 120), "units")
-
     def display_image(self, image_data):
         """
         Displays an image within the ViewEntryFrame.
@@ -1034,9 +1058,6 @@ class ViewEntryFrame(tk.Frame):
         state to the previously selected entry data and category.
         """
 
-        # Unbind the mousewheel from the canvas on the toplevel window
-        self.canvas.unbind_all("<MouseWheel>")
-
         # Destroy the window
         window.destroy()
 
@@ -1137,9 +1158,8 @@ class EditEntryFrame(tk.Frame):
         # Bind the creation of the canvas to on_canvas_creation
         self.canvas.bind("<Configure>", self.on_canvas_configure)
 
-        # Finally, configure the scrollbar to the canvas and the mouse wheel to scroll
+        # Finally, configure the scrollbar to the canvas
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
-        self.canvas.bind_all("<MouseWheel>", self.on_mouse_wheel)
 
         # Iterate through column_names
         for column_name in self.column_names:
@@ -1450,19 +1470,6 @@ class EditEntryFrame(tk.Frame):
         """
         self.canvas.itemconfig(self.inner_frame_id, width=event.width)
 
-    def on_mouse_wheel(self, event):
-        """
-        Scrolls the canvas with the mouse wheel.
-
-        Args:
-            event (tk.Event): The event object representing the mouse wheel scroll event.
-
-        This method scrolls the canvas vertically in response to mouse wheel movement.
-        """
-
-        # Adjust the view of the canvas when the mouse wheel is scrolled
-        self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
-
     def select_image(self):
         """
         Opens a file dialog to select an image.
@@ -1585,9 +1592,6 @@ class EditEntryFrame(tk.Frame):
         This method unbinds mouse wheel events from the canvas, destroys the provided window, and resets the application
         state to the previously selected entry data and category.
         """
-
-        # Unbind the MouseWheel event
-        self.canvas.unbind_all("<MouseWheel>")
         
         # Destroy the window
         window.destroy()
@@ -1653,6 +1657,9 @@ class WorldBuilderApp(tk.Tk):
 
         # Bind the closing event to the on_closing method
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        # Bind scroll events to the parent window
+        ScrollEventHandler.bind_scroll_event(self)
 
     def create_menu_bar(self):
         """
