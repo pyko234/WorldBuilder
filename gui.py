@@ -70,13 +70,34 @@ class ScrollEventHandler:
 
         # Iterate through widget parents to find first instance of widget with 'yview_scroll'
         while widget is not None:
-            if hasattr(widget, 'yview_scroll'):
-                try:
-                    widget.yview_scroll(move, "units")
-                    break
-                except Exception:
-                    pass
-            widget = widget.master
+
+            # If the widget has yview_scroll attribute
+            if not hasattr(widget, 'yview_scroll'):
+            
+                # Update the widget
+                widget = widget.master
+
+                # Skip the rest of the loop
+                continue
+
+            # If listbox is current widget name
+            if 'listbox' in str(widget).split('!')[-1]:
+                
+                # If listbox size is not greater than listbox height
+                if not widget.size() > int(widget.cget("height")):
+                    
+                    # Update the widget
+                    widget = widget.master
+                    
+                    # Skip the rest of the loop
+                    continue
+            
+            # Scroll the widget
+            widget.yview_scroll(move, "units")
+
+            # Stop the loop
+            break
+
 
     @staticmethod
     def bind_scroll_event(parent_window):
