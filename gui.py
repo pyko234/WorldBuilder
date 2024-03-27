@@ -348,8 +348,14 @@ class WorldOverviewFrame(tk.Frame):
             select_map_button.pack(pady=10)
 
         # View Map button
-        view_map_button = tk.Button(self, text='View World Map', command=self.view_map)
-        view_map_button.pack(pady=10)
+        self.view_map_button = tk.Button(self, text='View World Map', command=self.view_map)
+        self.view_map_button.pack(pady=10)
+
+        # Check if world map exists
+        if not backend_logic.veiw_world_map(app_data.session, app_data.url):
+            
+            # Diable button
+            self.view_map_button.config(state=tk.DISABLED)
 
         # Entries label
         selection_label = tk.Label(self, text="Entries:")
@@ -530,6 +536,9 @@ class WorldOverviewFrame(tk.Frame):
 
             # Display the selected image
             self.save_image(image_data)
+        
+        # Enable view map button
+        self.view_map_button.config(state=tk.NORMAL)
     
     def save_image(self, image_data):
         """
