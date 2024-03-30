@@ -364,6 +364,7 @@ class WorldOverviewFrame(tk.Frame):
         self.parent = parent
         self.controller = controller
         self.app_data = app_data
+        self.map_photo = None
 
         # Create StringVar for World Label
         self.label_text_var = tk.StringVar()
@@ -561,7 +562,7 @@ class WorldOverviewFrame(tk.Frame):
 
             # Read the image file and convert it to bytes
             with open(file_path, 'rb') as file:
-               image_data = file.read()
+                image_data = file.read()
 
             # Display the selected image
             self.save_image(image_data)
@@ -1256,9 +1257,6 @@ class EditEntryFrame(tk.Frame):
                 # Remove name in tags
                 tags.remove(self.app_data.selected_entry_data['name'])
 
-                # Get current tags from selected data
-                current_tags = self.app_data.selected_entry_data['tags'].split(',')
-
         # Combobox for tags
         self.tag_combobox = ttk.Combobox(self.inner_frame, values=tags, state='readonly')
         self.tag_combobox.pack(pady=5)
@@ -1523,7 +1521,7 @@ class EditEntryFrame(tk.Frame):
 
             # Read the image file and convert it to bytes
             with open(file_path, 'rb') as file:
-               self.image_data = file.read()
+                self.image_data = file.read()
             
             # Display the selected image
             self.display_image(self.image_data)

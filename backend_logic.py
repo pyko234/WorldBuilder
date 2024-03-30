@@ -1,18 +1,14 @@
-from sqlalchemy import create_engine, inspect, text, event
+import sys
+from tkinter import messagebox, simpledialog
+import os
+import traceback
+from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
-from pathlib import Path
 from database_schema import WorldBuilder
-from tkinter import messagebox, simpledialog
-from sys import exit
-import traceback
-import json
-import os
-from sys import platform
-
 
 # If platform is linux
-if platform.startswith('linux'):
+if sys.platform.startswith('linux'):
 
     # Set path to the databases folder
     path = os.path.expanduser("~/.local/share/WorldBuilder/db")
@@ -43,7 +39,7 @@ def find_database():
 
     # Get list of database files in the path
     found = any(file.endswith("_database.db") for file in os.listdir(path))
-    
+
     # If no database files found
     if not found:
 
@@ -55,10 +51,10 @@ def find_database():
 
             # Create database
             create_database()
-        
+
         # Else exit
         else:
-            exit()
+            sys.exit()
 
 def create_database():
     """
@@ -76,7 +72,7 @@ def create_database():
     # Quick if for verification of name
     if name is None:
         print("Invalid world name. Aborting.")
-        
+
         # Return None if the name is invalid
         return None
 
@@ -84,11 +80,11 @@ def create_database():
     database_folder = path
 
     # Get database_url
-    DATABASE_URL = rf'sqlite:///{database_folder}/{name.lower().replace(" ", "_")}_database.db'
-    print(f"Database URL: {DATABASE_URL}")
+    database_url = rf'sqlite:///{database_folder}/{name.lower().replace(" ", "_")}_database.db'
+    print(f"Database URL: {database_url}")
 
     # Instaniate world_builder using the database url
-    world_builder = WorldBuilder(database_url=DATABASE_URL)
+    world_builder = WorldBuilder(database_url=database_url)
 
     # With state to work with session and close when down
     with world_builder.get_session() as session:
@@ -104,16 +100,16 @@ def create_database():
 
             # Commit changes
             session.commit()
-            
+
             # Return just the created database url
-            return DATABASE_URL
-        
+            return database_url
+
         # Catch any errors thrown
         except SQLAlchemyError as e:
             print(f"Error: {e}")
 
             # Remove the created database
-            os.remove(DATABASE_URL)
+            os.remove(database_url)
 
             # Return None
             return None
@@ -134,7 +130,7 @@ def get_database_url(database_identifier):
 
         # Return as database identifier is already a url
         return database_identifier
-    
+
     else:
 
         # Return sqlite url
@@ -148,17 +144,17 @@ def create_session_by_url(database_url):
         database_url (str): The URL of the database.
 
     Returns:
-        Session: The session object.
+        session: The session object.
     """
 
     # Create engine
     engine = create_engine(database_url)
-    
+
     # Create session using engine
-    Session = sessionmaker(bind=engine)
-    
+    session = sessionmaker(bind=engine)
+
     # Return session
-    return Session()
+    return session()
 
 def create_session_by_name(database_name):
     """
@@ -168,12 +164,12 @@ def create_session_by_name(database_name):
         database_name (str): The name of the database.
 
     Returns:
-        Session: The session object.
+        session: The session object.
     """
 
     # Get database url
     database_url = get_database_url(database_name)
-    
+
     # Return session using create_session_by_url
     return create_session_by_url(database_url)
 
@@ -193,7 +189,7 @@ def get_table_names(session):
 
         # Creater inspector
         inspector = inspect(session.bind)
-        
+
         # Get names of all the tables
         names = inspector.get_table_names()
 
@@ -202,10 +198,10 @@ def get_table_names(session):
 
         # Remove the excluded tables
         table_names = [name for name in names if name not in excluded_tables]
-        
+
         # Return table names
         return table_names
-    
+
     # Handle Errors
     except Exception as e:
         print(f"An error occurred: {e}")
@@ -233,7 +229,7 @@ def get_column_names(session, table_name):
 
     # Get inspector
     inspector = inspect(engine)
-    
+
     # Get columns
     columns = inspector.get_columns(table_name)
 
@@ -268,7 +264,7 @@ def add_data_to_table(session, table_name, data_dict, database_url):
 
         # Create instance of WorldBuilder
         world_builder = WorldBuilder(database_url)
-        
+
         # Get tag table
         tag_table = world_builder.get_table_class('tags')
 
@@ -283,7 +279,7 @@ def add_data_to_table(session, table_name, data_dict, database_url):
 
             # Ask the user if they want to update the data
             update_data = messagebox.askyesno("Update Entry", "Entry already exists. Do you want to update the data?")
-            
+
             # If the user selects "ok"
             if update_data:
                 print("Updating data...")
@@ -291,12 +287,12 @@ def add_data_to_table(session, table_name, data_dict, database_url):
                 # Update the existing entry if the user chooses to do so
                 for key, value in data_dict.items():
                     setattr(existing_entry, key, value)
-                
+
                 # Commit changes
                 session.commit()
 
                 print("Data updated successfully!")
-            
+
             else:
                 print("Data not updated.")
 
@@ -305,7 +301,7 @@ def add_data_to_table(session, table_name, data_dict, database_url):
 
             # Create a new entry if it doesn't exist
             new_entry = main_table_class(**data_dict)
-            
+
             # Add new data to database
             session.add(new_entry)
             print("Data added successfully!")
@@ -322,16 +318,16 @@ def add_data_to_table(session, table_name, data_dict, database_url):
                 # Add entry to tags table with the last inserted ID
                 # Get tags from entry data
                 tags = data_dict['tags'].split(",")
-                
+
                 # Iterate through tags
                 for tag in tags:
-                    
+
                     # Insert tag entry into tag table
                     tag_entry = tag_table(entry_name=data_dict['name'], entry_location=f'{table_name}/{last_id}')
-                    
+
                     # Add tag entry to database
                     session.add(tag_entry)
-                    
+
                     print(f"Tag '{tag}' added to tags table with location: {last_id}")
 
                 # Commit the transaction
@@ -342,12 +338,12 @@ def add_data_to_table(session, table_name, data_dict, database_url):
 
     # Catch any errors
     except Exception as e:
-        
+
         # Print the traceback and error message
         traceback.print_exc()
         print(f"Error adding/updating data to {table_name}: {e}")
         print(f"Data dictionary: {data_dict}")
-        
+
         # Rollback the transaction in case of an error
         session.rollback()
 
@@ -370,7 +366,7 @@ def remove_entry(session, table_name, entry_name, database_url):
 
         # Create instance of WorldBuilder
         world_builder = WorldBuilder(database_url)
-        
+
         # Get table class
         main_table_class = world_builder.get_table_class(table_name)
 
@@ -382,21 +378,21 @@ def remove_entry(session, table_name, entry_name, database_url):
 
             # Delete the entry
             session.delete(entry_to_delete)
-            
+
             # Commit changes
             session.commit()
             print(f"Entry '{entry_name}' removed successfully!")
-        
+
         else:
             print(f"Entry '{entry_name}' not found.")
-    
+
     # Catch errors
     except Exception as e:
-        
+
         # Print the traceback and error message
         traceback.print_exc()
         print(f"Error removing entry '{entry_name}' from {table_name}: {e}")
-        
+
         # Rollback the transaction in case of an error
         session.rollback()
 
@@ -415,22 +411,22 @@ def get_entry_names(session, table_name, database_url):
 
     # Try block to catch errors
     try:
-        
+
         # Get the table class dynamically using the session
         world_builder = WorldBuilder(database_url)
-        
+
         # Get main table class
         table_class = world_builder.get_table_class(table_name)
-        
+
         # If the table class is found
         if table_class:
-            
+
             # Query the table fo all entry names
             result = session.query(table_class.name).all()
 
             # Extract the names from the result
             names = [row[0] for row in result]
-            
+
             # Return list of names
             return names
 
@@ -440,7 +436,7 @@ def get_entry_names(session, table_name, database_url):
 
     # Catch errors
     except Exception as e:
-        
+
         print(f"Error retrieving names from {table_name}: {e}")
         return []
 
@@ -459,10 +455,10 @@ def get_data_for_entry(session, entry_name, database_url):
 
     # Try block to catch errors
     try:
-        
+
         # Create instance of WorldBuilder
         world_builder = WorldBuilder(database_url)
-        
+
         # Get tag table
         tag_table = world_builder.get_table_class('tags')
 
@@ -473,7 +469,7 @@ def get_data_for_entry(session, entry_name, database_url):
         if not tag_entry:
             print("Entry Data not found.")
             return
-        
+
         # Unpack entry location and id from entry_location column
         entry_location, entry_id = tag_entry.entry_location.split('/')
 
@@ -488,22 +484,22 @@ def get_data_for_entry(session, entry_name, database_url):
 
             # Convert the result to a dictionary for easy access
             data_dict = result.__dict__
-            
+
             # Remove unnecessary attributes
             data_dict.pop("_sa_instance_state", None)
-            
+
             return data_dict
-        
+
         else:
             return None
 
     # Catch Errors
     except Exception as e:
-        
+
         # Print traceback
         traceback.print_exc()
         print(f"Error retrieving data from {entry_name}: {e}")
-        
+
         return None
 
 def get_all_tags(session, database_url):
@@ -523,10 +519,10 @@ def get_all_tags(session, database_url):
 
         # Create instance of WorldBuilder
         world_builder = WorldBuilder(database_url)
-        
+
         # Get tag table
         tag_table = world_builder.get_table_class('tags')
-        
+
         # Query to retrieve all tags
         result = session.query(tag_table.entry_name).all()
 
@@ -534,12 +530,12 @@ def get_all_tags(session, database_url):
         tags = [row[0] for row in result]
 
         return tags
-    
+
     # Catch errors
     except Exception as e:
         print(f"Error retrieving tags: {e}")
         return []
-    
+
 def get_tag_location(session, entry_name, database_url):
     """
     Retrieves the location of a tag in the database.
@@ -558,10 +554,10 @@ def get_tag_location(session, entry_name, database_url):
 
         # Create instance of WorldBuilder
         world_builder = WorldBuilder(database_url)
-        
+
         # Get tag table
         tag_table = world_builder.get_table_class('tags')
-        
+
         # Query to retrieve all tags for entry
         tag_entry = session.query(tag_table).filter_by(entry_name=entry_name).first()
 
@@ -570,7 +566,7 @@ def get_tag_location(session, entry_name, database_url):
 
         # Return tag location
         return tag_column
-    
+
     # Catch errors
     except Exception as e:
         print(f"Error retrieving tags: {e}")
@@ -643,7 +639,7 @@ def veiw_world_map(session, database_url):
         data = entry.world_map
 
         return data
-    
+
     except Exception as e:
         # Print traceback and error message
         traceback.print_exc()
@@ -664,9 +660,9 @@ def filter_tag_list_by_table(session, database_url, tag_list, table_name):
         list: A filtered list of tags.
     """
 
-    # Create world builder 
+    # Create world builder
     world_builder = WorldBuilder(database_url)
-    
+
     # Create tag table
     tag_table = world_builder.get_table_class('tags')
 
@@ -688,4 +684,3 @@ def filter_tag_list_by_table(session, database_url, tag_list, table_name):
 
 if __name__ == '__main__':
     find_database()
-    pass
