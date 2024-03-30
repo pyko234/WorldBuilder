@@ -8,18 +8,27 @@ from sys import exit
 import traceback
 import json
 import os
+from sys import platform
 
-# Get script path
-script_directory = Path(os.path.dirname(os.path.abspath(__file__)))
 
-# Set path to the databases folder
-path = script_directory / "db"
+# If platform is linux
+if platform.startswith('linux'):
+
+    # Set path to the databases folder
+    path = os.path.expanduser("~/.local/share/WorldBuilder/db")
+
+# If platform is windows
+else:
+
+    # Set path to the databases folder
+    path = os.path.expanduser("~/AppData/Local/WorldBuilder/db")
 
 # If the folder does not exist
 if not os.path.exists(path):
 
     # Create the folder
     os.makedirs(path)
+    print(f"Folder created at: {path}")
 
 
 def find_database():
@@ -34,7 +43,7 @@ def find_database():
 
     # Get list of database files in the path
     found = any(file.endswith("_database.db") for file in os.listdir(path))
-    
+    print(found)
     # If no database files found
     if not found:
 

@@ -45,7 +45,7 @@ class AppData:
         self.edit = None
 
 
-class ScrollEventHandler:
+class UniversalHandler:
     """
         Handle scrollevents in a way that works cross-platform
     """
@@ -105,10 +105,20 @@ class ScrollEventHandler:
         Bind scroll events to the parent window.
         """
         if sys.platform.startswith("linux"):
-            parent_window.bind("<Button-4>", ScrollEventHandler.handle_scroll_event)
-            parent_window.bind("<Button-5>", ScrollEventHandler.handle_scroll_event)
+            parent_window.bind("<Button-4>", UniversalHandler.handle_scroll_event)
+            parent_window.bind("<Button-5>", UniversalHandler.handle_scroll_event)
         else:
-            parent_window.bind("<MouseWheel>", ScrollEventHandler.handle_scroll_event)
+            parent_window.bind("<MouseWheel>", UniversalHandler.handle_scroll_event)
+
+    @staticmethod
+    def get_db_path():
+        """
+        Return database path based on platform
+        """
+        if sys.platform.startswith("linux"):
+            return os.path.expanduser("~/.local/share/WorldBuilder/db")
+        else:
+            return os.path.expanduser("~/AppData/Local/WorldBuilder/db")
 
 
 class WorldSelectionFrame(tk.Frame):
@@ -246,9 +256,7 @@ class WorldSelectionFrame(tk.Frame):
                   If no worlds are found, an empty dictionary is returned.
         """
 
-        # Determine the directory containing the database files
-        script_directory = Path(os.path.dirname(os.path.abspath(__file__)))
-        path = script_directory / "db"
+        path = Path(UniversalHandler.get_db_path())
 
         # Initialize an empty dictionary to story world names and their database URLs
         names = {}
@@ -1689,7 +1697,7 @@ class WorldBuilderApp(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # Bind scroll events to the parent window
-        ScrollEventHandler.bind_scroll_event(self)
+        UniversalHandler.bind_scroll_event(self)
 
     def create_menu_bar(self):
         """
