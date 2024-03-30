@@ -43,7 +43,7 @@ def find_database():
 
     # Get list of database files in the path
     found = any(file.endswith("_database.db") for file in os.listdir(path))
-    print(found)
+    
     # If no database files found
     if not found:
 
