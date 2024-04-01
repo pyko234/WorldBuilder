@@ -7,7 +7,6 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 from .. import backend_logic
-from .world_overview_frame import WorldOverviewFrame
 
 class ViewEntryFrame(tk.Frame):
     """
@@ -181,7 +180,7 @@ class ViewEntryFrame(tk.Frame):
         self.app_data.previous_entry_data = None
 
         # Show WorldOverviewFrame
-        self.controller.show_frame(WorldOverviewFrame)
+        self.controller.choose_next_frame("WorldOverviewFrame")
 
     def insert_data(self):
         """

@@ -8,10 +8,6 @@ from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
 
 from .. import backend_logic
-#from .world_selection_frame import WorldSelectionFrame
-#from .new_entry_select_category_frame import NewEntrySelectCategoryFrame
-#from .edit_entry_frame import EditEntryFrame
-#from .view_entry_frame import ViewEntryFrame
 
 class WorldOverviewFrame(tk.Frame):
     """
@@ -61,9 +57,6 @@ class WorldOverviewFrame(tk.Frame):
                 or creating a new entry.
         """
 
-        from .world_selection_frame import WorldSelectionFrame
-        from .new_entry_select_category_frame import NewEntrySelectCategoryFrame
-
         # Create the frame and pass attributes
         tk.Frame.__init__(self, parent)
         self.parent = parent
@@ -105,13 +98,13 @@ class WorldOverviewFrame(tk.Frame):
 
         # Back button, returns to WorldSelectionFrame
         back_button = ttk.Button(button_frame, text="Back",
-            command=lambda: self.controller.show_frame(WorldSelectionFrame))
+            command= lambda: self.controller.choose_next_frame("WorldSelectionFrame"))
         back_button.pack(side=tk.LEFT, padx=20)
 
         # Create Entry button, if mode is edit
         if self.app_data.edit:
             create_button = ttk.Button(button_frame, text="Create New Entry",
-                command=lambda: self.controller.show_frame(NewEntrySelectCategoryFrame))
+                command=lambda: self.controller.choose_next_frame("NewEntrySelectCategoryFrame"))
             create_button.pack(side=tk.RIGHT, padx=20)
 
     def create_dynamic_category_widgets(self):
@@ -231,9 +224,6 @@ class WorldOverviewFrame(tk.Frame):
             None
         """
 
-        from .edit_entry_frame import EditEntryFrame
-        from .view_entry_frame import ViewEntryFrame
-
         # Retrieve the entry that was double clicked
         selected_item = event.widget.get(event.widget.curselection())
 
@@ -246,11 +236,11 @@ class WorldOverviewFrame(tk.Frame):
 
         # Check for edit mode; if True pass the EditEntryFrame
         if self.app_data.edit:
-            self.controller.show_frame(EditEntryFrame)
+            self.controller.choose_next_frame("EditEntryFrame")
 
         # if False pass the ViewEntryFrame
         else:
-            self.controller.show_frame(ViewEntryFrame)
+            self.controller.choose_next_frame("ViewEntryFrame")
 
     def select_map(self):
         """

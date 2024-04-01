@@ -46,17 +46,17 @@ class MainWindow(tk.Tk):
         self.create_menu_bar()
 
         # Create list of frame classes
-        frame_classes = [WorldSelectionFrame,WorldOverviewFrame,
+        frame_classes = [WorldSelectionFrame, WorldOverviewFrame,
             NewEntrySelectCategoryFrame, ViewEntryFrame, EditEntryFrame]
 
         # Create dictionary of frames with the names as the key and no instance of the class saved
-        self.frames = {frame_class: None for frame_class in frame_classes}
+        self.frames = {frame_class.__name__: frame_class for frame_class in frame_classes}
 
         # Track the current frame
         self.current_frame = None
 
         # Show frame WorldSelectionFrame
-        self.show_frame(WorldSelectionFrame)
+        self.choose_next_frame("WorldSelectionFrame")
 
         # Bind the closing event to the on_closing method
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -102,6 +102,20 @@ class MainWindow(tk.Tk):
             # Destroy main window
             self.destroy()
 
+    def choose_next_frame(self, next_frame_name):
+        """
+        Choose and show the next frame based on its name.
+
+        Args:
+            next_frame_name: The name of the next frame to be displayed.
+
+        This method selects the appropriate frame from the self.frames dictionary based on the provided name,
+        and then displays it on the main application window using the show_frame method.
+        """
+        for frame in self.frames.items():
+            if next_frame_name == frame[0]:
+                self.show_frame(frame[1])
+
     def show_frame(self, cont):
         """
         Displays the specified frame in the main application window.
@@ -114,19 +128,12 @@ class MainWindow(tk.Tk):
         for frames of type EditEntryFrame or ViewEntryFrame.
         """
 
-        # Check for instance of frame
-        if isinstance(cont, tk.Frame):
+        # If a frame class is provided, create a new instance
+        frame = cont(self, self, self.app_data)
 
-            # If an instance of the frame is provided, use it directly
-            frame = cont
-
-        else:
-            # If a frame class is provided, create a new instance
-            frame = cont(self, self, self.app_data)
-            self.frames[cont] = frame
 
         # Save the class of the current frame
-        self.app_data.previous_frame = cont  # <-- Store the class, not the instance
+        self.app_data.previous_frame = cont
 
         # Hide the current frame
         if self.current_frame:

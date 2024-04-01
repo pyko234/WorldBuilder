@@ -54,6 +54,7 @@ class WorldSelectionFrame(tk.Frame):
         # Save the controller and app_data to the class
         self.controller = controller
         self.app_data = app_data
+        self.next_frame = ""
 
         # Retrieve available worlds
         self.worlds = backend_logic.get_database_names()
@@ -111,7 +112,6 @@ class WorldSelectionFrame(tk.Frame):
         Returns:
             None
         """
-        from .world_overview_frame import WorldOverviewFrame
 
         # Get the selected world and edit mode from UI elements
         selected_world = self.world_var.get()
@@ -132,7 +132,7 @@ class WorldSelectionFrame(tk.Frame):
         self.app_data.selected_world = selected_world
 
         # Handle the selected world and edit mode
-        self.controller.show_frame(WorldOverviewFrame)
+        self.controller.choose_next_frame("WorldOverviewFrame")
 
     def create_new(self):
         """
@@ -152,8 +152,6 @@ class WorldSelectionFrame(tk.Frame):
             None
         """
 
-        from .world_overview_frame import WorldOverviewFrame
-
         # Generate a new database URL by creating a new database file
         database_url = backend_logic.create_database()
 
@@ -164,5 +162,5 @@ class WorldSelectionFrame(tk.Frame):
             self.app_data.session = backend_logic.create_session_by_url(database_url)
 
             # Navigate to the WorldOverviewFrame to display the newly created world
-            self.controller.show_frame(WorldOverviewFrame)
+            self.controller.choose_next_frame("WorldOverviewFrame")
      

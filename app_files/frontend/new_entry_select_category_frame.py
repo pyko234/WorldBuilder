@@ -4,9 +4,6 @@ This class defines the NewEntrySelectCategoryFrame frame.
 
 import tkinter as tk
 
-from .world_overview_frame import WorldOverviewFrame
-from .edit_entry_frame import EditEntryFrame
-
 class NewEntrySelectCategoryFrame(tk.Frame):
     """
     A Tkinter Frame subclass for selecting a category for a new entry within an application.
@@ -55,7 +52,8 @@ class NewEntrySelectCategoryFrame(tk.Frame):
         select_button.pack(side=tk.RIGHT, padx=20)
 
         # Back Button, returns to WorldOverviewFrame
-        back_button = tk.Button(self, text="Back", command=lambda: self.controller.show_frame(WorldOverviewFrame))
+        back_button = tk.Button(self, text="Back",
+            command=lambda: self.controller.choose_next_frame("WorldOverviewFrame"))
         back_button.pack(side=tk.LEFT, padx=20)
 
     def select_category(self):
@@ -81,4 +79,4 @@ class NewEntrySelectCategoryFrame(tk.Frame):
             self.app_data.selected_category = selected_item.replace(' ', '_').lower()
 
             # Proceed to EditEntryFrame
-            self.controller.show_frame(EditEntryFrame)
+            self.controller.choose_next_frame("EditEntryFrame")

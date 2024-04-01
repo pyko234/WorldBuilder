@@ -12,13 +12,13 @@ from .database_schema import WorldBuilder
 if sys.platform.startswith('linux'):
 
     # Set path to the databases folder
-    path = os.path.expanduser("~/.local/share/WorldBuilder/db")
+    path = Path(os.path.expanduser("~/.local/share/WorldBuilder/db"))
 
 # If platform is windows
 else:
 
     # Set path to the databases folder
-    path = os.path.expanduser("~/AppData/Local/WorldBuilder/db")
+    path = Path(os.path.expanduser("~/AppData/Local/WorldBuilder/db"))
 
 # If the folder does not exist
 if not os.path.exists(path):

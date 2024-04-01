@@ -7,7 +7,6 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
 from .. import backend_logic
-from .world_overview_frame import WorldOverviewFrame
 from .view_entry_frame import ViewEntryFrame
 
 
@@ -203,7 +202,7 @@ class EditEntryFrame(tk.Frame):
         self.app_data.previous_entry_data = None
 
         # Go back a frame
-        self.controller.show_frame(WorldOverviewFrame)
+        self.controller.choose_next_frame("WorldOverviewFrame")
 
     def save(self):
         """
@@ -246,7 +245,7 @@ class EditEntryFrame(tk.Frame):
             self.app_data.selected_category, data_to_write, self.app_data.url)
 
         # Show WorldOverviewFrame
-        self.controller.show_frame(WorldOverviewFrame)
+        self.controller.choose_next_frame("WorldOverviewFrame")
 
     def delete_entry(self):
         """
@@ -263,7 +262,7 @@ class EditEntryFrame(tk.Frame):
             self.app_data.selected_category, data_to_remove, self.app_data.url)
 
         # Show WorldOverviewFrame
-        self.controller.show_frame(WorldOverviewFrame)
+        self.controller.choose_next_frame("WorldOverviewFrame")
 
     def insert_data_if_exists(self):
         """
@@ -374,7 +373,7 @@ class EditEntryFrame(tk.Frame):
         new_window.geometry("700x600")
         new_window.protocol("WM_DELETE_WINDOW", lambda: self.on_window_close(new_window))
 
-        # Create a new instance of EditEntryFrame with the info from the selected tag
+        # Create a new instance of ViewEntryFrame with the info from the selected tag
         new_frame = ViewEntryFrame(new_window, self.controller, self.app_data)
 
         # Pack the EditEntryFrame into the new window
@@ -547,4 +546,4 @@ class EditEntryFrame(tk.Frame):
         new_frame = EditEntryFrame(self.parent, self.controller, self.app_data)
 
         # Show new frame
-        self.controller.show_frame(new_frame)
+        self.controller.choose_next_frame("EditEntryFrame")
