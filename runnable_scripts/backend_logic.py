@@ -2,10 +2,11 @@ import sys
 from tkinter import messagebox, simpledialog
 import os
 import traceback
+from pathlib import Path
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
-from database_schema import WorldBuilder
+from .database_schema import WorldBuilder
 
 # If platform is linux
 if sys.platform.startswith('linux'):
@@ -172,6 +173,43 @@ def create_session_by_name(database_name):
 
     # Return session using create_session_by_url
     return create_session_by_url(database_url)
+
+def get_database_names():
+    """
+    This function gets the world names of all database in the database path.
+
+    Args:
+        None
+
+    Return:
+        names = dictionary of {database_name, url}
+    """
+
+    # Initialize an empty dictionary to story world names and their database URLs
+    names = {}
+
+    # Iterate through files in the 'db' directory
+    for file in os.listdir(path):
+
+        # Check if the file is a database file
+        if file.endswith("_database.db"):
+
+            # Construct the database URL
+            database_url = f"sqlite:///{Path(path) / file}"
+
+            # Create a session with the current database URL
+            session = create_session_by_url(database_url)
+
+            with session:
+
+                # Query the first world entry in the database
+                world_entry = session.query(WorldBuilder.World).first()
+
+                # If a world entry exists, add it to the dictionary
+                if world_entry:
+                    names[world_entry.name] = database_url
+
+        return names
 
 def get_table_names(session):
     """
