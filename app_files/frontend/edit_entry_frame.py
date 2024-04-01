@@ -6,7 +6,7 @@ import io
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from PIL import Image, ImageTk
-from . import backend_logic
+from .. import backend_logic
 from .world_overview_frame import WorldOverviewFrame
 from .view_entry_frame import ViewEntryFrame
 

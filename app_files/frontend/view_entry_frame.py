@@ -6,7 +6,7 @@ import io
 import tkinter as tk
 from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
-from . import backend_logic
+from .. import backend_logic
 from .world_overview_frame import WorldOverviewFrame
 
 class ViewEntryFrame(tk.Frame):

@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
 
-from . import backend_logic
+from .. import backend_logic
 #from .world_selection_frame import WorldSelectionFrame
 #from .new_entry_select_category_frame import NewEntrySelectCategoryFrame
 #from .edit_entry_frame import EditEntryFrame

@@ -1,4 +1,4 @@
-from runnable_scripts import MainWindow
+from app_files.frontend.main_window import MainWindow
 
 def main():
     app = MainWindow()

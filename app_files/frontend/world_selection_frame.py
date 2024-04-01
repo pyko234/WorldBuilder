@@ -5,7 +5,7 @@ This class defines the frame for the World Selection.
 import tkinter as tk
 from tkinter import ttk
 
-from . import backend_logic
+from .. import backend_logic
 
 
 

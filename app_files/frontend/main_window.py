@@ -5,8 +5,8 @@ This class defines the mainwindow for the app.
 import tkinter as tk
 from tkinter import messagebox
 
-from .data_class import AppData
-from .universal_handler import UniversalHandler
+from ..other_classes.data_class import AppData
+from ..other_classes.universal_handler import UniversalHandler
 from .world_selection_frame import WorldSelectionFrame
 from .world_overview_frame import WorldOverviewFrame
 from .new_entry_select_category_frame import NewEntrySelectCategoryFrame
