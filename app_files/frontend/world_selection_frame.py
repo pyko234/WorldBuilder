@@ -9,7 +9,7 @@ from .. import backend_logic
 
 
 
-class WorldSelectionFrame(tk.Frame):
+class WorldSelectionFrame(ttk.Frame):
     """
     Represents a frame for selecting a world and choosing between edit and view modes.
 
@@ -49,7 +49,7 @@ class WorldSelectionFrame(tk.Frame):
         """
 
         # Create a frame
-        tk.Frame.__init__(self, parent)
+        ttk.Frame.__init__(self, parent)
 
         # Save the controller and app_data to the class
         self.controller = controller

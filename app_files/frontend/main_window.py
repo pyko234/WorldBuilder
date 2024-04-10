@@ -3,7 +3,7 @@ This class defines the mainwindow for the app.
 """
 
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 
 from ..other_classes.data_class import AppData
 from ..other_classes.universal_handler import UniversalHandler
@@ -63,6 +63,8 @@ class MainWindow(tk.Tk):
 
         # Bind scroll events to the parent window
         UniversalHandler.bind_scroll_event(self)
+
+        self.change_style()
 
     def create_menu_bar(self):
         """
@@ -149,6 +151,12 @@ class MainWindow(tk.Tk):
         if hasattr(frame, "update_label_text"):
             frame.update_label_text()
 
-if __name__ == '__main__':
-    app = MainWindow()
-    app.mainloop()
+    def change_style(self):
+        style = ttk.Style()
+
+        themes = style.theme_names()
+
+        for theme in themes:
+            print(theme)
+
+        style.theme_use('clam')

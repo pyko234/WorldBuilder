@@ -9,7 +9,7 @@ from PIL import Image, ImageTk
 
 from .. import backend_logic
 
-class WorldOverviewFrame(tk.Frame):
+class WorldOverviewFrame(ttk.Frame):
     """
         Represents a frame for providing an overview of a selected world, including entry categories and entries.
 
@@ -58,7 +58,7 @@ class WorldOverviewFrame(tk.Frame):
         """
 
         # Create the frame and pass attributes
-        tk.Frame.__init__(self, parent)
+        ttk.Frame.__init__(self, parent)
         self.parent = parent
         self.controller = controller
         self.app_data = app_data
@@ -67,16 +67,16 @@ class WorldOverviewFrame(tk.Frame):
         # Create StringVar for World Label
         self.label_text_var = tk.StringVar()
         self.label_text_var.set(self.app_data.selected_world)
-        label = tk.Label(self, text=self.label_text_var.get())
+        label = ttk.Label(self, text=self.label_text_var.get())
         label.pack(pady=10)
 
         # Create Select Map button if mode is edit
         if self.app_data.edit:
-            select_map_button = tk.Button(self, text='Select Map', command=self.select_map)
+            select_map_button = ttk.Button(self, text='Select Map', command=self.select_map)
             select_map_button.pack(pady=10)
 
         # View Map button
-        self.view_map_button = tk.Button(self, text='View World Map', command=self.view_map)
+        self.view_map_button = ttk.Button(self, text='View World Map', command=self.view_map)
         self.view_map_button.pack(pady=10)
 
         # Check if world map exists
@@ -86,14 +86,14 @@ class WorldOverviewFrame(tk.Frame):
             self.view_map_button.config(state=tk.DISABLED)
 
         # Entries label
-        selection_label = tk.Label(self, text="Entries:")
+        selection_label = ttk.Label(self, text="Entries:")
         selection_label.pack(pady=10)
 
         # Create category widgets dynamically using create dynamic category widgets method
         self.create_dynamic_category_widgets()
 
         # Create a frame to hold the button widgets at the bottom of the main frame
-        button_frame = tk.Frame(self)
+        button_frame = ttk.Frame(self)
         button_frame.pack(side="bottom", pady=20)
 
         # Back button, returns to WorldSelectionFrame
@@ -131,17 +131,17 @@ class WorldOverviewFrame(tk.Frame):
         num_columns = 3
 
         # Canvas widget to allow scrolling
-        canvas_frame = tk.Frame(self)
+        canvas_frame = ttk.Frame(self)
         canvas_frame.pack(fill="both", expand=True)
 
         self.canvas = tk.Canvas(canvas_frame)
         self.canvas.pack(side="left", fill="both", expand=True, padx=5)
 
         # Create frame to hold frames created below and create the scrollable window
-        category_frames = tk.Frame(self.canvas)
+        category_frames = ttk.Frame(self.canvas)
 
         # Scroll bar widget packed to the right
-        scrollbar = tk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
+        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
         scrollbar.pack(side="right", fill="y")
 
         # Configure the scrollbar and canvas
@@ -158,14 +158,14 @@ class WorldOverviewFrame(tk.Frame):
         self.listbox_dict = {}
 
         for i in range(0, len(table_names), num_columns):
-            category_frame = tk.Frame(category_frames)
+            category_frame = ttk.Frame(category_frames)
             category_frame.pack(fill='both', side=tk.TOP, pady=10)
 
             for x in range(i, min(i + num_columns, len(table_names))):
-                individual_frame = tk.Frame(category_frame)
+                individual_frame = ttk.Frame(category_frame)
                 individual_frame.pack(side=tk.LEFT, fill='both', expand=True)  # Adjusted packing
 
-                label = tk.Label(individual_frame, text=table_names[x].replace('_', ' ').title())
+                label = ttk.Label(individual_frame, text=table_names[x].replace('_', ' ').title())
                 label.pack(side=tk.TOP)
 
                 listbox = tk.Listbox(individual_frame, height=10)
@@ -316,7 +316,7 @@ class WorldOverviewFrame(tk.Frame):
         self.map_photo = ImageTk.PhotoImage(image)
 
         # Display photo in map window
-        label = tk.Label(map_window, image=self.map_photo)
+        label = ttk.Label(map_window, image=self.map_photo)
         label.pack()
 
     def frame_width(self, event):

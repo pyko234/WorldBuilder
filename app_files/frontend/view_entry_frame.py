@@ -8,7 +8,7 @@ from tkinter import ttk, messagebox
 from PIL import Image, ImageTk
 from .. import backend_logic
 
-class ViewEntryFrame(tk.Frame):
+class ViewEntryFrame(ttk.Frame):
     """
     A Tkinter Frame subclass for viewing details of a selected entry within an application.
 
@@ -37,7 +37,7 @@ class ViewEntryFrame(tk.Frame):
         """
 
         # Create frame and store parent, controller, and app_data
-        tk.Frame.__init__(self, parent)
+        ttk.Frame.__init__(self, parent)
         self.parent = parent
         self.controller = controller
         self.app_data = app_data
@@ -54,27 +54,27 @@ class ViewEntryFrame(tk.Frame):
         self.column_names = backend_logic.get_column_names(self.app_data.session, self.app_data.selected_category)
 
         # Entry Category label
-        top_label = tk.Label(self, text=f"{self.app_data.selected_category.title()} Entry:")
+        top_label = ttk.Label(self, text=f"{self.app_data.selected_category.title()} Entry:")
         top_label.pack(fill='both')
 
         # Name frame separate from scrollable frame
-        name_frame = tk.Frame(self)
+        name_frame = ttk.Frame(self)
         name_frame.pack(pady=10, fill='both')
 
         # Name label
-        name_label = tk.Label(name_frame, text="Name")
+        name_label = ttk.Label(name_frame, text="Name")
         name_label.grid(row=0, column=0, sticky="w", padx=5, pady=5)
 
         # Entry name
-        self.name_text = tk.Label(name_frame)
+        self.name_text = ttk.Label(name_frame)
         self.name_text.grid(row=1, column=1, sticky="w", padx=5, pady=5)
 
         # Separator for easier scrolling
-        separator = tk.Frame(self, bd=10, relief='flat', height=2, background='grey')
+        separator = ttk.Separator(self, orient='horizontal')
         separator.pack(fill='x')
 
         # Frame to hold the canvas widget for scrolling
-        canvas_frame = tk.Frame(self)
+        canvas_frame = ttk.Frame(self)
         canvas_frame.pack(fill='both', expand=True)
 
         # Canvas widget for scrolling
@@ -86,7 +86,7 @@ class ViewEntryFrame(tk.Frame):
         self.scrollbar.pack(side='right', fill='y')
 
         # Scrollable frame
-        self.inner_frame = tk.Frame(self.canvas)
+        self.inner_frame = ttk.Frame(self.canvas)
         self.canvas.create_window((0, 0), window=self.inner_frame, anchor='nw')
 
         # Assign creation of window to an id for configuring the scrolling
@@ -126,11 +126,11 @@ class ViewEntryFrame(tk.Frame):
             current_row = current_row + 2
 
         # Image label
-        image_label = tk.Label(self.inner_frame, text="Photo")
+        image_label = ttk.Label(self.inner_frame, text="Photo")
         image_label.grid(row=current_row + 2, column=0, sticky="w", padx=5, pady=5)
 
         # The image itself
-        self.image = tk.Label(self.inner_frame)
+        self.image = ttk.Label(self.inner_frame)
         self.image.grid(row=current_row + 3, column=1, sticky="w", padx=5, pady=5)
 
         # Bind the doubleclick on the image to view_original_image method
@@ -143,7 +143,7 @@ class ViewEntryFrame(tk.Frame):
         if not isinstance(self.parent, tk.Toplevel):
 
             # Tag Label
-            tag_label = tk.Label(self.inner_frame, text='Tags')
+            tag_label = ttk.Label(self.inner_frame, text='Tags')
             tag_label.grid(row=current_row + 4, column=0, sticky="w", padx=5, pady=5)
 
             # Create list of options for filtering tags
@@ -162,7 +162,7 @@ class ViewEntryFrame(tk.Frame):
             self.tag_listbox.bind('<Double-1>', self.on_tag_double_click)
 
             # Back Button bound to go_back
-            back_button = tk.Button(self, text="Back", command=self.go_back)
+            back_button = ttk.Button(self, text="Back", command=self.go_back)
             back_button.pack(pady=10)
 
         # Insert data if exists
@@ -300,7 +300,7 @@ class ViewEntryFrame(tk.Frame):
             original_window.title("Original Image")
 
             # Create a label to display the original image
-            original_image_label = tk.Label(original_window)
+            original_image_label = ttk.Label(original_window)
 
             # Convert the original image to Tkinter PhotoImage format
             original_photo = ImageTk.PhotoImage(original_image)

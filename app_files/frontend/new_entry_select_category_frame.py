@@ -3,8 +3,9 @@ This class defines the NewEntrySelectCategoryFrame frame.
 """
 
 import tkinter as tk
+from tkinter import ttk
 
-class NewEntrySelectCategoryFrame(tk.Frame):
+class NewEntrySelectCategoryFrame(ttk.Frame):
     """
     A Tkinter Frame subclass for selecting a category for a new entry within an application.
 
@@ -31,12 +32,12 @@ class NewEntrySelectCategoryFrame(tk.Frame):
         """
 
         # Create frame and store the controller and AppData
-        tk.Frame.__init__(self, parent)
+        ttk.Frame.__init__(self, parent)
         self.controller = controller
         self.app_data = app_data
 
         # Prompt label
-        top_label = tk.Label(self, text='Please select a category for the new entry:')
+        top_label = ttk.Label(self, text='Please select a category for the new entry:')
         top_label.pack()
 
         # Listbox for selecting entry type
@@ -48,11 +49,11 @@ class NewEntrySelectCategoryFrame(tk.Frame):
             self.listbox.insert(tk.END, item.replace('_', ' ').title())
 
         # Select button
-        select_button = tk.Button(self, text='Select', command=self.select_category)
+        select_button = ttk.Button(self, text='Select', command=self.select_category)
         select_button.pack(side=tk.RIGHT, padx=20)
 
         # Back Button, returns to WorldOverviewFrame
-        back_button = tk.Button(self, text="Back",
+        back_button = ttk.Button(self, text="Back",
             command=lambda: self.controller.choose_next_frame("WorldOverviewFrame"))
         back_button.pack(side=tk.LEFT, padx=20)
 

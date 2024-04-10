@@ -10,7 +10,7 @@ from .. import backend_logic
 from .view_entry_frame import ViewEntryFrame
 
 
-class EditEntryFrame(tk.Frame):
+class EditEntryFrame(ttk.Frame):
     """
     A frame for editing and adding new entries.
 
@@ -37,7 +37,7 @@ class EditEntryFrame(tk.Frame):
         """
 
         # Create frame and save args as properties of frame
-        tk.Frame.__init__(self, parent)
+        ttk.Frame.__init__(self, parent)
         self.parent = parent
         self.controller = controller
         self.app_data = app_data
@@ -52,19 +52,19 @@ class EditEntryFrame(tk.Frame):
         self.column_names = backend_logic.get_column_names(self.app_data.session, self.app_data.selected_category)
 
         # Top label
-        top_label = tk.Label(self, text=f"New {self.app_data.selected_category.title()} Entry:")
+        top_label = ttk.Label(self, text=f"New {self.app_data.selected_category.title()} Entry:")
         top_label.pack(pady=5)
 
         # Name label
-        name_label = tk.Label(self, text="Name")
+        name_label = ttk.Label(self, text="Name")
         name_label.pack(pady=5)
 
         # Name text
-        self.name_text = tk.Entry(self)
+        self.name_text = ttk.Entry(self)
         self.name_text.pack(pady=5)
 
         # Canvas frame
-        canvas_frame = tk.Frame(self)
+        canvas_frame = ttk.Frame(self)
         canvas_frame.pack(pady=5, fill='both', expand=True)
 
         # Canvas to allow scrolling
@@ -79,7 +79,7 @@ class EditEntryFrame(tk.Frame):
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
         # Create inner_frame and place it on the canvas
-        self.inner_frame = tk.Frame(self.canvas)
+        self.inner_frame = ttk.Frame(self.canvas)
         self.canvas.create_window((0, 0), window=self.inner_frame, anchor='nw')
 
         # Store the creation of the window as a variable for later calls
@@ -102,11 +102,11 @@ class EditEntryFrame(tk.Frame):
                 continue
 
             # Column name label
-            label = tk.Label(self.inner_frame, text=column_name.title())
+            label = ttk.Label(self.inner_frame, text=column_name.title())
             label.pack(pady=5)
 
             # Text frame label
-            text_frame = tk.Frame(self.inner_frame)
+            text_frame = ttk.Frame(self.inner_frame)
             text_frame.pack(pady=10)
 
             # Scrollbar for text box
@@ -121,22 +121,22 @@ class EditEntryFrame(tk.Frame):
             self.text_widgets[column_name] = text
 
         # Image label
-        image_label = tk.Label(self.inner_frame, text="Photo")
+        image_label = ttk.Label(self.inner_frame, text="Photo")
         image_label.pack(pady=5)
 
         # Label to show image
-        self.image = tk.Label(self.inner_frame)
+        self.image = ttk.Label(self.inner_frame)
         self.image.pack(pady=5)
 
         # Bind the double click of the image to view_original_image
         self.image.bind('<Double-1>', self.view_original_image)
 
         # Select image button
-        select_image_btn = tk.Button(self.inner_frame, text="Select Image", command=self.select_image)
+        select_image_btn = ttk.Button(self.inner_frame, text="Select Image", command=self.select_image)
         select_image_btn.pack(pady=5)
 
         # Tag label
-        tag_label = tk.Label(self.inner_frame, text='Tags')
+        tag_label = ttk.Label(self.inner_frame, text='Tags')
         tag_label.pack(pady=5)
 
         # Retrieve all tags from tag table
@@ -156,7 +156,7 @@ class EditEntryFrame(tk.Frame):
         self.tag_combobox.pack(pady=5)
 
         # Add Frame to pack the tag_listbox and filter combo
-        tag_frame = tk.Frame(self.inner_frame)
+        tag_frame = ttk.Frame(self.inner_frame)
         tag_frame.pack(pady=10)
 
         # Listbox to display existing tags
@@ -176,16 +176,16 @@ class EditEntryFrame(tk.Frame):
         # Bind the <Return> key to the add_tag function
         self.tag_combobox.bind('<Return>', self.add_tag)
 
-        delete_entry_button = tk.Button(self.inner_frame, text="Delete Entry", command=self.delete_entry)
+        delete_entry_button = ttk.Button(self.inner_frame, text="Delete Entry", command=self.delete_entry)
         delete_entry_button.pack(pady=5)
 
-        button_frame = tk.Frame(self)
+        button_frame = ttk.Frame(self)
         button_frame.pack(side='bottom', pady=10)
 
-        save_button = tk.Button(button_frame, text='Save', command=self.save)
+        save_button = ttk.Button(button_frame, text='Save', command=self.save)
         save_button.pack(side=tk.RIGHT, padx=10)
 
-        back_button = tk.Button(button_frame, text='Back', command=self.go_back)
+        back_button = ttk.Button(button_frame, text='Back', command=self.go_back)
         back_button.pack(side=tk.LEFT, padx=10)
 
         self.insert_data_if_exists()
@@ -472,7 +472,7 @@ class EditEntryFrame(tk.Frame):
             original_window.title("Original Image")
 
             # Create a label to display the original image
-            original_image_label = tk.Label(original_window)
+            original_image_label = ttk.Label(original_window)
 
             # Convert the original image to Tkinter PhotoImage format
             original_photo = ImageTk.PhotoImage(original_image)
