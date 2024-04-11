@@ -3,10 +3,11 @@ This class defines the mainwindow for the app.
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import messagebox
 
 from ..other_classes.data_class import AppData
 from ..other_classes.universal_handler import UniversalHandler
+from .settings_frame import SettingsFrame
 from .world_selection_frame import WorldSelectionFrame
 from .world_overview_frame import WorldOverviewFrame
 from .new_entry_select_category_frame import NewEntrySelectCategoryFrame
@@ -46,7 +47,7 @@ class MainWindow(tk.Tk):
         self.create_menu_bar()
 
         # Create list of frame classes
-        frame_classes = [WorldSelectionFrame, WorldOverviewFrame,
+        frame_classes = [SettingsFrame, WorldSelectionFrame, WorldOverviewFrame,
             NewEntrySelectCategoryFrame, ViewEntryFrame, EditEntryFrame]
 
         # Create dictionary of frames with the names as the key and no instance of the class saved
@@ -64,7 +65,6 @@ class MainWindow(tk.Tk):
         # Bind scroll events to the parent window
         UniversalHandler.bind_scroll_event(self)
 
-        self.change_style()
 
     def create_menu_bar(self):
         """
@@ -79,6 +79,7 @@ class MainWindow(tk.Tk):
         # Create a file menu
         file_menu = tk.Menu(menubar, tearoff=0)
         file_menu.add_command(label="Exit", command=self.on_closing)
+        file_menu.add_command(label="Settings", command=self.show_settings)
         menubar.add_cascade(label="File", menu=file_menu)
 
         # Add the menu bar to the application window
@@ -151,12 +152,17 @@ class MainWindow(tk.Tk):
         if hasattr(frame, "update_label_text"):
             frame.update_label_text()
 
-    def change_style(self):
-        style = ttk.Style()
+    def show_settings(self):
+        """
+        This function call the settings frams to be packed into the main app window
+        """
 
-        themes = style.theme_names()
+        # Check for if on a data page
+        if self.current_frame.__class__.__name__ not in ["WorldOverviewFrame", "WorldSelectionFrame"]:
 
-        for theme in themes:
-            print(theme)
+            # Check if user canceled
+            if not messagebox.askokcancel("Changes need to be saved.", "Changes will not be saved. Continue?"):
+                return
 
-        style.theme_use('clam')
+        # Choose the SettingsFrame
+        self.choose_next_frame("SettingsFrame")
